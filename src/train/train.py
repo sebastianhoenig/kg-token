@@ -23,6 +23,7 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
     for param in llm.parameters():
         param.requires_grad = False  # Freezes the LLM parameters
 
+    params = llm.state_dict()
     gnn.to(device)
     llm.to(device)
 
@@ -42,10 +43,18 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             movie_embedding = embedding['movie'][movie_id]
             user_embedding = embedding['user'][user_id]
 
+            user_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids("<USER>")
+            movie_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids("<MOVIE>")
+            # Update embeddings without in-place modifications
+            params['transformer.wte.weight'][user_token_id] = user_embedding
+            params['transformer.wte.weight'][movie_token_id] = movie_embedding
+
+            # Load updated params back into the model
+            llm.load_state_dict(params)
 
             #old_emb_movie = llm_wrapper.get_llm().transformer.wte.weight[llm_wrapper.get_tokenizer().convert_tokens_to_ids('<MOVIE>')]
             # Replace the movie and user embeddings in the llm embeddings
-            llm_wrapper.update_embeddings(user_embedding, movie_embedding)
+            #llm_wrapper.update_embeddings(user_embedding, movie_embedding)
             #new_emb_movie = llm.transformer.wte.weight[llm_wrapper.get_tokenizer().convert_tokens_to_ids('<MOVIE>')]
             labels = input_tokens.clone()
             labels = labels.to(device)
@@ -59,6 +68,7 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             total_loss += loss.detach().item()
 
             optimizer.zero_grad()
+            loss.requires_grad = True
             loss.backward()  # Got issue here
             optimizer.step()
         avg_loss = total_loss / len(dataloader)
