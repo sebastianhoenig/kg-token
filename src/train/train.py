@@ -45,7 +45,7 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             user_id = user_id.to(device)
             movie_id = movie_id.to(device)
 
-            embedding = gnn(graph.x_dict, graph.edge_index_dict).to(device)
+            embedding = gnn(graph.x_dict, graph.edge_index_dict)
             movie_embedding = embedding['movie'][movie_id].to(device)
             user_embedding = embedding['user'][user_id].to(device)
 

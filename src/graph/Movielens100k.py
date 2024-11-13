@@ -58,16 +58,15 @@ class MovieLens:
 
         movie_titles = TextEncoder()(movies, ['movie_title'])
         movie_genres = GenresEncoder()(movies, self.genres)
-        user_ages = torch.Tensor(users['age'].values).to(device)  # Move to device
-        movie_features = torch.cat((movie_titles, movie_genres), dim=1).to(device)  # Move to device
+        user_ages = torch.Tensor(users['age'].values).to(self.device)  # Move to device
+        movie_features = torch.cat((movie_titles, movie_genres), dim=1).to(self.device)  # Move to device
         index, labels = self._encode_ratings(ratings)
 
         data = HeteroData()
         data['movie'].x = movie_features
         data['user'].x = user_ages.view(-1, 1)
-        data['user', 'likes', 'movie'].edge_index = torch.tensor(index, dtype=torch.long).to(device)  # Move to device
-        data['user', 'likes', 'movie'].edge_labels = torch.tensor(labels, dtype=torch.float).to(
-            device)  # Move to device
-        data = ToUndirected()(data).to(device)  # Convert to undirected and move to device
+        data['user', 'likes', 'movie'].edge_index = torch.tensor(index, dtype=torch.long).to(self.device)  # Move to device
+        data['user', 'likes', 'movie'].edge_labels = torch.tensor(labels, dtype=torch.float).to(self.device)
+        data = ToUndirected()(data).to(self.device)  # Convert to undirected and move to device
         self.data = data
 
