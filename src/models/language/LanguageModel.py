@@ -26,15 +26,6 @@ class LLMWrapper(nn.Module):
         self.tokenizer.add_special_tokens(special_tokens_dict)
         self.llm.resize_token_embeddings(len(self.tokenizer))
 
-    def update_embeddings(self, user_embedding, movie_embedding):
-        user_token_id = self.tokenizer.convert_tokens_to_ids(self.USER_EMB)
-        movie_token_id = self.tokenizer.convert_tokens_to_ids(self.MOVIE_EMB)
-        if self.model_name == "gpt2":
-            self.llm.transformer.wte.weight[movie_token_id] = movie_embedding.clone()
-            self.llm.transformer.wte.weight[user_token_id] = user_embedding.clone()
-        elif self.model_name == "meta-llama/Llama-3.1-8B-Instruct":
-            pass
-        # TODO: Add support for other models
 
 
 

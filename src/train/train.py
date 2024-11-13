@@ -4,7 +4,7 @@ import torch
 import tqdm
 from tqdm import tqdm
 
-from models.language.LanguageModel import LLMWrapper
+from src.models.language.LanguageModel import LLMWrapper
 from src.train.Config import TrainingConfig
 from torch_geometric.data import HeteroData
 
@@ -13,7 +13,7 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
     device = config.device
     # TODO function to get optimizer
     optimizer = torch.optim.Adam(gnn.parameters(), lr=config.learning_rate)
-    torch.autograd.set_detect_anomaly(True)
+
     # Set GNN parameters to require gradients
     for param in gnn.parameters():
         param.requires_grad = True
@@ -24,8 +24,12 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
         param.requires_grad = False  # Freezes the LLM parameters
 
     params = llm.state_dict()
+
     gnn.to(device)
     llm.to(device)
+
+    USER_EMB = llm_wrapper.USER_EMB
+    MOVIE_EMB = llm_wrapper.MOVIE_EMB
 
     for epoch in tqdm(range(config.num_epochs)):
 
@@ -43,8 +47,9 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             movie_embedding = embedding['movie'][movie_id]
             user_embedding = embedding['user'][user_id]
 
-            user_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids("<USER>")
-            movie_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids("<MOVIE>")
+            user_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids(USER_EMB)
+            movie_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids(MOVIE_EMB)
+
             # Update embeddings without in-place modifications
             params['transformer.wte.weight'][user_token_id] = user_embedding
             params['transformer.wte.weight'][movie_token_id] = movie_embedding
@@ -52,10 +57,6 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             # Load updated params back into the model
             llm.load_state_dict(params)
 
-            #old_emb_movie = llm_wrapper.get_llm().transformer.wte.weight[llm_wrapper.get_tokenizer().convert_tokens_to_ids('<MOVIE>')]
-            # Replace the movie and user embeddings in the llm embeddings
-            #llm_wrapper.update_embeddings(user_embedding, movie_embedding)
-            #new_emb_movie = llm.transformer.wte.weight[llm_wrapper.get_tokenizer().convert_tokens_to_ids('<MOVIE>')]
             labels = input_tokens.clone()
             labels = labels.to(device)
 
