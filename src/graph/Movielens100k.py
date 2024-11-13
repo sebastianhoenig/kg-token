@@ -12,8 +12,9 @@ class MovieLens:
         path (str): The path to the unzipped MovieLens 100k dataset from
         https://files.grouplens.org/datasets/movielens/ml-100k.zip
     """
-    def __init__(self, path: str):
+    def __init__(self, path: str, device: str):
         self.path = path
+        self.device = device
         self.genres = ['unknown', 'Action', 'Adventure', 'Animation', 'Childrens', 'Comedy', 'Crime',
                        'Documentary', 'Drama', 'Fantasy', 'Film-Noir', 'Horror', 'Musical', 'Mystery',
                        'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western']
@@ -52,19 +53,21 @@ class MovieLens:
 
         return np.array([src_all, dst_all]), labels
 
-    def create_graph(self):
+    def create_graph(self, device):
         movies, ratings, users = self._load_data()
 
         movie_titles = TextEncoder()(movies, ['movie_title'])
         movie_genres = GenresEncoder()(movies, self.genres)
-        user_ages = torch.Tensor(users['age'].values)
-        movie_features = torch.cat((movie_titles, movie_genres), dim=1)
+        user_ages = torch.Tensor(users['age'].values).to(device)  # Move to device
+        movie_features = torch.cat((movie_titles, movie_genres), dim=1).to(device)  # Move to device
         index, labels = self._encode_ratings(ratings)
 
         data = HeteroData()
         data['movie'].x = movie_features
         data['user'].x = user_ages.view(-1, 1)
-        data['user', 'likes', 'movie'].edge_index = torch.tensor(index, dtype=torch.long)
-        data['user', 'likes', 'movie'].edge_labels = torch.tensor(labels, dtype=torch.float)
-        data = ToUndirected()(data)
+        data['user', 'likes', 'movie'].edge_index = torch.tensor(index, dtype=torch.long).to(device)  # Move to device
+        data['user', 'likes', 'movie'].edge_labels = torch.tensor(labels, dtype=torch.float).to(
+            device)  # Move to device
+        data = ToUndirected()(data).to(device)  # Convert to undirected and move to device
         self.data = data
+
