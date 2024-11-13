@@ -33,12 +33,10 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
     # TODO function to get optimizer
     optimizer = torch.optim.Adam(gnn.parameters(), lr=config.learning_rate)
 
-    for epoch in tqdm(range(config.num_epochs)):
+    for epoch in tqdm(range(config.num_epochs), desc="Epoch Progress"):
 
         total_loss = 0
-        for idxx, batch in enumerate(dataloader):
-            if idxx % 100 == 0:
-                print(f"Batch {idxx}/{len(dataloader)}")
+        for batch in tqdm(dataloader, desc="Batch Progress", leave=False):
             input_tokens, target_mask, attention_mask, user_id, movie_id = batch
 
             input_tokens = input_tokens.to(device)
