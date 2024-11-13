@@ -20,3 +20,10 @@
 - Questions W2:
   - I needed to add edges in both directions for PyG but my dataset only asks for one direction: problem?
   - Check w/ Kenza the embedding stuff
+
+
+
+How does num layers of GNN / architecture influence results?
+How does having ratings/structure of graph influence results?
+
+Optional: Visualization of graph

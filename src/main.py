@@ -17,7 +17,7 @@ if __name__ == '__main__':
     MOVIE_EMB = "<MOVIE>"
     MODEL_NAME = 'gpt2'
 
-    movielens = MovieLens('/Users/sebastian/University/Master/third term/sem-proj/kg-token/data/ml-100k/')
+    movielens = MovieLens('/Users/sebastian/University/Master/third term/sem-proj/kg-token/data/ml-100k/', 'cpu')
     movielens.create_graph()
 
     gnn = GraphTokenEncoder(EMBEDDING_DIM, EMBEDDING_DIM)

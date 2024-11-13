@@ -53,7 +53,7 @@ class MovieLens:
 
         return np.array([src_all, dst_all]), labels
 
-    def create_graph(self, device):
+    def create_graph(self):
         movies, ratings, users = self._load_data()
 
         movie_titles = TextEncoder()(movies, ['movie_title'])

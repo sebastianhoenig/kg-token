@@ -22,7 +22,7 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
     for param in llm.parameters():
         param.requires_grad = False  # Freezes the LLM parameters
 
-    params = {k: v.to(device) for k, v in llm.state_dict().items()}
+    #params = {k: v.to(device) for k, v in llm.state_dict().items()}
 
     gnn.to(device)
     llm.to(device)
@@ -36,7 +36,9 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
     for epoch in tqdm(range(config.num_epochs)):
 
         total_loss = 0
-        for batch in dataloader:
+        for idxx, batch in enumerate(dataloader):
+            if idxx % 100 == 0:
+                print(f"Batch {idxx}/{len(dataloader)}")
             input_tokens, target_mask, attention_mask, user_id, movie_id = batch
 
             input_tokens = input_tokens.to(device)
@@ -53,11 +55,13 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             movie_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids(MOVIE_EMB)
 
             # Update embeddings without in-place modifications
-            params['transformer.wte.weight'][user_token_id] = user_embedding
-            params['transformer.wte.weight'][movie_token_id] = movie_embedding
+            #params['transformer.wte.weight'][user_token_id] = user_embedding
+            #params['transformer.wte.weight'][movie_token_id] = movie_embedding
 
+            llm.get_input_embeddings().weight.data[user_token_id] = user_embedding
+            llm.get_input_embeddings().weight.data[movie_token_id] = movie_embedding
             # Load updated params back into the model
-            llm.load_state_dict(params)
+            #llm.load_state_dict(params)
 
             labels = input_tokens.clone().to(device)
             labels = labels.to(device)
