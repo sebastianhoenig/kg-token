@@ -21,7 +21,7 @@ if __name__ == '__main__':
     movielens.create_graph()
 
     gnn = GraphTokenEncoder(EMBEDDING_DIM, EMBEDDING_DIM)
-    gnn = to_hetero(gnn, movielens.data.metadata(), aggr='sum')
+    gnn = to_hetero(gnn, movielens.train.metadata(), aggr='sum')
 
     llm_wrapper = LLMWrapper(model_name=MODEL_NAME, user_emb=USER_EMB, movie_emb=MOVIE_EMB)
 
@@ -46,4 +46,4 @@ if __name__ == '__main__':
         device='cuda' if torch.cuda.is_available() else 'cpu'
     )
 
-    train(llm_wrapper, gnn, movielens.data, train_dataloader, config)
+    train(llm_wrapper, gnn, movielens.train, train_dataloader, config)
