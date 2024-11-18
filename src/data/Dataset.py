@@ -23,8 +23,7 @@ class GraphQADataset(Dataset):
         for ind, (user_idx, movie_idx) in enumerate(zip(*user_movie_edges)):
             answer = "Yes" if likes[ind] == 1 else "No"
             qa_dict[ind] = {
-                "question": f"Q: Does user {self.llm_wrapper.USER_EMB} like movie {self.llm_wrapper.MOVIE_EMB}? "
-                            f"Only answer with 'Yes.' or 'No.'\nA: ",
+                "question": f"Q: Does user {self.llm_wrapper.USER_EMB} like movie {self.llm_wrapper.MOVIE_EMB}?\nA: ",
                 "answer": answer,
                 "user_id": user_idx,
                 "movie_id": movie_idx,
