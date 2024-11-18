@@ -22,8 +22,6 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
     for param in llm.parameters():
         param.requires_grad = False  # Freezes the LLM parameters
 
-    #params = {k: v.to(device) for k, v in llm.state_dict().items()}
-
     gnn.to(device)
     llm.to(device)
 
@@ -52,14 +50,8 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             user_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids(USER_EMB)
             movie_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids(MOVIE_EMB)
 
-            # Update embeddings without in-place modifications
-            #params['transformer.wte.weight'][user_token_id] = user_embedding
-            #params['transformer.wte.weight'][movie_token_id] = movie_embedding
-
             llm.get_input_embeddings().weight.data[user_token_id] = user_embedding
             llm.get_input_embeddings().weight.data[movie_token_id] = movie_embedding
-            # Load updated params back into the model
-            #llm.load_state_dict(params)
 
             labels = input_tokens.clone().to(device)
             labels = labels.to(device)
@@ -74,7 +66,7 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
 
             optimizer.zero_grad()
             loss.requires_grad = True
-            loss.backward()  # Got issue here
+            loss.backward()
             optimizer.step()
         avg_loss = total_loss / len(dataloader)
         print(f"Epoch {epoch + 1}/{config.num_epochs}, Loss: {avg_loss}")

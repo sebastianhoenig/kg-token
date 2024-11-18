@@ -23,7 +23,8 @@ class GraphQADataset(Dataset):
         for ind, (user_idx, movie_idx) in enumerate(zip(*user_movie_edges)):
             answer = "Yes" if likes[ind] == 1 else "No"
             qa_dict[ind] = {
-                "question": f"Q: Does user {self.llm_wrapper.USER_EMB} like movie {self.llm_wrapper.MOVIE_EMB}?\nA: ",
+                "question": f"Q: Does user {self.llm_wrapper.USER_EMB} like movie {self.llm_wrapper.MOVIE_EMB}? "
+                            f"Only answer with 'Yes.' or 'No.'\nA: ",
                 "answer": answer,
                 "user_id": user_idx,
                 "movie_id": movie_idx,
@@ -46,7 +47,7 @@ class GraphQADataset(Dataset):
             answer_tokens = tokenizer(answer)["input_ids"]
             BOS_TOKEN = tokenizer.eos_token_id  # TODO CHANGE WHEN NO LONGER GPT2
             EOS_TOKEN = tokenizer.eos_token_id
-            PAD_TOKEN = tokenizer.eos_token_id # TODO CHANGE AS WELL WHEN NO LONGER GPT2
+            PAD_TOKEN = tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
 
             input_tokens = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             target_mask = np.zeros_like(input_tokens)
@@ -65,9 +66,3 @@ class GraphQADataset(Dataset):
 
     def __getitem__(self, idx):
         return self.data[idx]
-
-
-
-
-
-
