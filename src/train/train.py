@@ -28,6 +28,7 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
     USER_EMB = llm_wrapper.USER_EMB
     MOVIE_EMB = llm_wrapper.MOVIE_EMB
 
+    wandb.log({"config": config})
     wandb.watch(llm, log="all", log_freq=1)
     wandb.watch(gnn, log="all", log_freq=1)
 
@@ -69,26 +70,9 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
 
             example_ct += 1
             if example_ct % config['logging_steps'] == 0:
-                train_log(loss, example_ct, epoch)
+                wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
 
             total_loss += loss.detach().item()
 
         avg_loss = total_loss / len(dataloader)
         print(f"Epoch {epoch + 1}/{config['num_epochs']}, Loss: {avg_loss}")
-
-
-def train_log(loss, example_ct, epoch):
-    wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
-    print(f"Loss after {str(example_ct).zfill(5)} examples: {loss:.3f}")
-
-
-
-
-
-
-
-
-
-
-
-

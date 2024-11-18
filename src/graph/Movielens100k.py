@@ -25,10 +25,10 @@ class MovieLens:
         movies = pd.read_csv(self.path + 'u.item', sep='|', encoding='latin-1', header=None)
         movies.columns = ['movie_id', 'movie_title', 'release_date', 'video_release_date', 'IMDb_URL'] + self.genres
 
-        ratings_train = pd.read_csv(self.path + 'u.data', sep='\t', header=None)
+        ratings_train = pd.read_csv(self.path + 'ua.base', sep='\t', header=None)
         ratings_train.columns = ['user_id', 'movie_id', 'rating', 'timestamp']
 
-        ratings_test = pd.read_csv(self.path + 'u.data', sep='\t', header=None)
+        ratings_test = pd.read_csv(self.path + 'ua.test', sep='\t', header=None)
         ratings_test.columns = ['user_id', 'movie_id', 'rating', 'timestamp']
 
         users = pd.read_csv(self.path + 'u.user', sep='|', header=None)
