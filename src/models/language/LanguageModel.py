@@ -12,9 +12,6 @@ class LLMWrapper(nn.Module):
         self.MOVIE_EMB = movie_emb
         self._add_user_and_movie_embed()
 
-        for param in self.llm.parameters():
-            param.requires_grad = False
-
     def get_llm(self):
         return self.llm
 
