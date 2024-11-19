@@ -81,7 +81,7 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             # Compute the loss using PyTorch's CrossEntropyLoss
             labels[target_mask == 0] = -100
             loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
-            loss = loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
+            loss = loss_fn(logits.squeeze(), labels.squeeze())
 
             if example_ct == 0:
                 wandb.watch(llm, log="all", log_freq=10000)
@@ -92,9 +92,9 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             optimizer.step()
 
             example_ct += 1
-            if example_ct % 1000 == 0:
+            if example_ct % 10 == 0:
                 wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
-                print_output_of_llm(logits, llm_wrapper, labels)
+                #print_output_of_llm(logits, llm_wrapper, labels)
 
             total_loss += loss.detach().item()
 
