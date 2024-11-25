@@ -13,8 +13,8 @@ class GraphQADataset(Dataset):
         super().__init__()
         self.graph = graph
         self.llm_wrapper = llm_wrapper
-        self.data = self.graphqa_ds(max_tokens)
         self.random = random
+        self.data = self.graphqa_ds(max_tokens)
 
     def _prepare_qa_dict(self) -> Dict[int, Dict[str, Union[str, List[int]]]]:
         qa_dict = {}
