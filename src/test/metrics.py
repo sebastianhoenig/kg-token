@@ -34,6 +34,8 @@ def yes_no_accuracy(
     num_correct = 0
     num_ambiguous = 0
     num_indeterminate = 0
+    num_yes_preds = 0
+    num_no_preds = 0
     for target, prediction in zip(targets, predictions):
         normalized_target = target.lower()
         binarized_target = 'yes' in normalized_target
@@ -56,6 +58,13 @@ def yes_no_accuracy(
             continue
         if binarized_prediction == binarized_target:
             num_correct += 1
+        if binarized_prediction:
+            num_yes_preds += 1
+        else:
+            num_no_preds += 1
+    print("\n")
+    print(f"Number of 'Yes' predictions: {num_yes_preds}, Number of 'No' predictions: {num_no_preds}")
+    print("\n")
     return {
         'yes_no_accuracy': num_correct / len(targets),
         'yes_no_ambiguous': num_ambiguous / len(targets),

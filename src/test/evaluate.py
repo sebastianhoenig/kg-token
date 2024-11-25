@@ -62,11 +62,12 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
             predicted_tokens = tokenizer.convert_ids_to_tokens(predictions.squeeze().tolist())
             target_tokens = tokenizer.convert_ids_to_tokens(labels.squeeze().tolist())
 
-            predicted_strings = [''.join(pred) for pred in predicted_tokens]
-            target_strings = [''.join(tgt) for tgt in target_tokens]
+            predicted_strings = ' '.join(predicted_tokens)
+            target_strings = ' '.join(target_tokens)
 
-            all_preds.extend(predicted_strings)
-            all_labels.extend(target_strings)
+            all_preds.append(predicted_strings)
+            all_labels.append(target_strings)
+
 
     results = yes_no_accuracy(all_labels, all_preds)
     print(f"Accuracy: {results['yes_no_accuracy']}, Ambiguous: {results['yes_no_ambiguous']}, "
@@ -132,14 +133,13 @@ def example_evaluations(llm_wrapper, gnn, graph, dataloader: DataLoader, config:
             tokenizer = llm_wrapper.get_tokenizer()
             predicted_tokens = tokenizer.convert_ids_to_tokens(predictions.squeeze().tolist())
             target_tokens = tokenizer.convert_ids_to_tokens(labels.squeeze().tolist())
-
             # Join tokenized predictions and targets into single strings
-            predicted_strings = [''.join(pred) for pred in predicted_tokens]
-            target_strings = [''.join(tgt) for tgt in target_tokens]
+            predicted_strings = ' '.join(predicted_tokens)
+            target_strings = ' '.join(target_tokens)
 
             # Add these to the lists for printing
-            all_preds.extend(predicted_strings)
-            all_labels.extend(target_strings)
+            all_preds.append(predicted_strings)
+            all_labels.append(target_strings)
 
     # Print the results for the selected 10 examples
     print(f"Selected {num_samples} Examples:")
