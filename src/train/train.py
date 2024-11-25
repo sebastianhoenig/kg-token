@@ -6,6 +6,7 @@ import torch
 import tqdm
 import wandb
 from tqdm.notebook import tqdm
+from itertools import islice
 import torch.nn.functional as F
 
 from torch_geometric.data import HeteroData
@@ -16,7 +17,7 @@ from src.models.language.LanguageModel import LLMWrapper
 
 
 def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
-          optimizer: torch.optim.Optimizer, config: Any):
+          optimizer: torch.optim.Optimizer, config: Any, num_examples_per_epoch: int = -1):
     # Set GNN parameters to require gradients
     for param in gnn.parameters():
         param.requires_grad = True
@@ -39,7 +40,14 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
     for epoch in tqdm(range(config['num_epochs']), desc="Epoch Progress"):
 
         total_loss = 0
-        for batch in tqdm(dataloader, desc="Batch Progress", leave=False):
+
+        if num_examples_per_epoch == -1:
+            # use all examples in the dataset
+            num_examples_per_epoch = len(dataloader)
+        else:
+            num_examples_per_epoch = min(num_examples_per_epoch, len(dataloader))
+
+        for batch in tqdm(islice(dataloader, num_examples_per_epoch), desc="Batch Progress", leave=False):
             input_tokens, target_mask, attention_mask, user_id, movie_id = batch
 
             input_tokens = input_tokens.to(device)
