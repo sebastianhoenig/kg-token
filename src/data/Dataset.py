@@ -32,13 +32,13 @@ class GraphQADataset(Dataset):
                     "movie_id": movie_idx,
                 }
         else:
+            r = RandomWords()
+            r1 = r.get_random_word()
+            r2 = r.get_random_word()
+            r3 = r.get_random_word()
+            r4 = r.get_random_word()
             for ind, (user_idx, movie_idx) in enumerate(zip(*user_movie_edges)):
-                r = RandomWords()
                 answer = "Yes" if likes[ind] == 1 else "No"
-                r1 = r.get_random_word()
-                r2 = r.get_random_word()
-                r3 = r.get_random_word()
-                r4 = r.get_random_word()
                 qa_dict[ind] = {
                     "question": f"Q: {r1} {r2} {self.llm_wrapper.USER_EMB} {r3} {r4} {self.llm_wrapper.MOVIE_EMB}?\nA: ",
                     "answer": answer,
