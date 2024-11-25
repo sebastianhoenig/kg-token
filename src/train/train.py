@@ -17,7 +17,7 @@ from src.models.language.LanguageModel import LLMWrapper
 
 
 def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
-          optimizer: torch.optim.Optimizer, config: Any, num_examples_per_epoch: int = -1):
+          optimizer: torch.optim.Optimizer, config: Any):
     # Set GNN parameters to require gradients
     for param in gnn.parameters():
         param.requires_grad = True
@@ -28,6 +28,7 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
         param.requires_grad = False  # Freezes the LLM parameters
 
     device = config['device']
+    num_examples_per_epoch = config['num_examples_per_epoch']
     gnn.to(device)
     llm.to(device)
     graph = graph.to(device)
