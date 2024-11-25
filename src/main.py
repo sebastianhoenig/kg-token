@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     llm_wrapper = LLMWrapper(model_name=MODEL_NAME, user_emb=USER_EMB, movie_emb=MOVIE_EMB)
 
-    train_dataset = GraphQADataset(graph=movielens.train, llm_wrapper=llm_wrapper, max_tokens=25)
+    train_dataset = GraphQADataset(graph=movielens.test, llm_wrapper=llm_wrapper, max_tokens=25)
     train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
 
     config = dict(

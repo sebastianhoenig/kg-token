@@ -101,6 +101,8 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
         avg_loss = total_loss / len(dataloader)
         print(f"Epoch {epoch + 1}/{config['num_epochs']}, Loss: {avg_loss}")
 
+    wandb.finish()
+
 
 def print_output_of_llm(logits, llm_wrapper, labels):
     # Get the predicted token ids
@@ -125,6 +127,7 @@ def print_output_of_llm(logits, llm_wrapper, labels):
     # Print the target tokens
     print("Target tokens:")
     print(target_tokens)
+
 
 def check_updates(new_params, initial_params):
     for new_param, initial_param in zip(new_params.parameters(), initial_params):

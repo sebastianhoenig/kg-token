@@ -80,8 +80,7 @@ class MovieLens:
         data_test = HeteroData()
         data_test['movie'].x = movie_features
         data_test['user'].x = user_ages.view(-1, 1)
-        data_test['user', 'likes', 'movie'].edge_index = torch.tensor(index_test, dtype=torch.long).to(
-            self.device)  # Move to device
+        data_test['user', 'likes', 'movie'].edge_index = torch.tensor(index_test, dtype=torch.long).to(self.device)  # Move to device
         data_test['user', 'likes', 'movie'].edge_labels = torch.tensor(labels_test, dtype=torch.float).to(self.device)
 
         self.train = ToUndirected()(data).to(self.device)  # Convert to undirected and move to device
