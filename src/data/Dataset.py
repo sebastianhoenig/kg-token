@@ -74,7 +74,7 @@ class GraphQADataset(Dataset):
 
             input_tokens = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             target_mask = np.zeros_like(input_tokens)
-            target_mask[len(query_tokens) + 1:] = 1
+            target_mask[len(query_tokens) + 1] = 1  # TRYING THIS OUT - REMOVING EOS TOKEN FROM TARGET MASK
             orig_len = len(query_tokens) + len(answer_tokens) + 1
             input_tokens = np.pad(input_tokens, [[0, max_tokens - orig_len-1]], constant_values=PAD_TOKEN)
             target_mask = np.pad(target_mask, [[0, max_tokens - orig_len-1]], constant_values=0)
