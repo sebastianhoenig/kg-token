@@ -12,12 +12,13 @@ class MovieLens:
         path (str): The path to the unzipped MovieLens 100k dataset from
         https://files.grouplens.org/datasets/movielens/ml-100k.zip
     """
-    def __init__(self, path: str, device: str):
+    def __init__(self, path: str, device: str, edge_type: str):
         self.path = path
         self.device = device
         self.genres = ['unknown', 'Action', 'Adventure', 'Animation', 'Childrens', 'Comedy', 'Crime',
                        'Documentary', 'Drama', 'Fantasy', 'Film-Noir', 'Horror', 'Musical', 'Mystery',
                        'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western']
+        self.edge_type = edge_type  # Is supposed to be either "binary" or "rating"
         self.train = None
         self.test = None
 
@@ -47,19 +48,17 @@ class MovieLens:
         return movies, ratings_train, ratings_test, users
 
     def _encode_ratings(self, ratings: pd.DataFrame) -> tuple[np.array, np.array]:
-        filtered_ratings_pos = ratings[ratings['rating'] > 3]
-        src_pos = filtered_ratings_pos['user_id'].values
-        dst_pos = filtered_ratings_pos['movie_id'].values
+        src = ratings['user_id'].values
+        dst = ratings['movie_id'].values
 
-        filtered_ratings_neg = ratings[ratings['rating'] <= 3]
-        src_neg = filtered_ratings_neg['user_id'].values
-        dst_neg = filtered_ratings_neg['movie_id'].values
+        if self.edge_type == 'binary':
+            labels = (ratings['rating'] > 3).astype(float).values  # 1 for like, 0 for dislike
+        elif self.edge_type == 'rating':
+            labels = ratings['rating'].values.astype(float)  # Use raw rating values as attributes
+        else:
+            raise ValueError(f"Unknown relationship type: {self.edge_type}")
 
-        src_all = np.concatenate([src_pos, src_neg])
-        dst_all = np.concatenate([dst_pos, dst_neg])
-        labels = np.concatenate([np.ones(len(src_pos)), np.zeros(len(src_neg))])  # 1 for likes, 0 for dislikes
-
-        return np.array([src_all, dst_all]), labels
+        return np.array([src, dst]), labels
 
     def create_graph(self):
         movies, ratings_train, ratings_test, users = self._load_data()
@@ -68,20 +67,20 @@ class MovieLens:
         movie_genres = GenresEncoder()(movies, self.genres)
         user_ages = torch.Tensor(users['age'].values).to(self.device)  # Move to device
         movie_features = torch.cat((movie_titles, movie_genres), dim=1).to(self.device)  # Move to device
-        index_train, labels_train = self._encode_ratings(ratings_train)
-        index_test, labels_test = self._encode_ratings(ratings_test)
+        index_train, attributes_train = self._encode_ratings(ratings_train)
+        index_test, attributes_test = self._encode_ratings(ratings_test)
 
         data = HeteroData()
         data['movie'].x = movie_features
         data['user'].x = user_ages.view(-1, 1)
         data['user', 'likes', 'movie'].edge_index = torch.tensor(index_train, dtype=torch.long).to(self.device)  # Move to device
-        data['user', 'likes', 'movie'].edge_labels = torch.tensor(labels_train, dtype=torch.float).to(self.device)
+        data['user', 'likes', 'movie'].edge_labels = torch.tensor(attributes_train, dtype=torch.float).to(self.device)
 
         data_test = HeteroData()
         data_test['movie'].x = movie_features
         data_test['user'].x = user_ages.view(-1, 1)
         data_test['user', 'likes', 'movie'].edge_index = torch.tensor(index_test, dtype=torch.long).to(self.device)  # Move to device
-        data_test['user', 'likes', 'movie'].edge_labels = torch.tensor(labels_test, dtype=torch.float).to(self.device)
+        data_test['user', 'likes', 'movie'].edge_labels = torch.tensor(attributes_test, dtype=torch.float).to(self.device)
 
         self.train = ToUndirected()(data).to(self.device)  # Convert to undirected and move to device
         self.test = ToUndirected()(data_test).to(self.device)
