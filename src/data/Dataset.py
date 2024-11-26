@@ -1,6 +1,7 @@
 from torch_geometric.data import HeteroData
 from typing import List, Dict, Union
 import numpy as np
+import random
 from torch.utils.data import Dataset
 from src.models.language.LanguageModel import LLMWrapper
 
@@ -15,14 +16,23 @@ class GraphQADataset(Dataset):
         self.random = random
         self.edge_type = edge_type
         self.data = self.graphqa_ds(max_tokens)
+        self.random_strings = ['airplane', 'car', 'bird', 'cat', 'dog', 'deer', 'frog', 'horse', 'ship', 'truck']
 
     def _get_question_answer(self, label: int) -> tuple[str, str]:
         if self.edge_type == "binary":
-            question = f"Q: Does user {self.llm_wrapper.USER_EMB} like movie {self.llm_wrapper.MOVIE_EMB}?\nA: "
+            if self.random:
+                r1, r2, r3, r4 = random.choices(self.random_strings, k=4)
+                question = f"Q: {r1} {r2} {self.llm_wrapper.USER_EMB} {r3} {r4} {self.llm_wrapper.MOVIE_EMB}?\nA: "
+            else:
+                question = f"Q: Does user {self.llm_wrapper.USER_EMB} like movie {self.llm_wrapper.MOVIE_EMB}?\nA: "
             answer = "Yes" if label == 1 else "No"
         elif self.edge_type == "rating":
-            question = f"Q: How does user {self.llm_wrapper.USER_EMB} rate movie {self.llm_wrapper.MOVIE_EMB}?\nA: "
-            # Compare w/ How does user X rate movie Y on a scale from 1 to 5?
+            if self.random:
+                r1, r2, r3, r4, r5 = random.choices(self.random_strings, k=5)
+                question = f"Q: {r1} {r2} {r3} {self.llm_wrapper.USER_EMB} {r4} {r5} {self.llm_wrapper.MOVIE_EMB}?\nA: "
+            else:
+                question = f"Q: How does user {self.llm_wrapper.USER_EMB} rate movie {self.llm_wrapper.MOVIE_EMB}?\nA: "
+                # Compare w/ How does user X rate movie Y on a scale from 1 to 5?
             answer = str(label)
         else:
             raise ValueError(f"Unknown relationship type: {self.edge_type}")
