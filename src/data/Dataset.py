@@ -9,7 +9,7 @@ from src.models.language.LanguageModel import LLMWrapper
 class GraphQADataset(Dataset):
     """QA LinkPrediction Dataset for Movielens Graph"""
 
-    def __init__(self, graph: HeteroData, llm_wrapper: LLMWrapper, random, edge_type, max_tokens: int = 25):
+    def __init__(self, graph: HeteroData, llm_wrapper: LLMWrapper, edge_type, random, max_tokens: int = 25):
         super().__init__()
         self.graph = graph
         self.llm_wrapper = llm_wrapper

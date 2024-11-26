@@ -15,7 +15,7 @@ if __name__ == '__main__':
     MOVIE_EMB = "<MOVIE>"
     MODEL_NAME = 'gpt2'
 
-    movielens = MovieLens('/Users/sebastian/University/Master/third term/sem-proj/kg-token/data/ml-100k/', 'cpu')
+    movielens = MovieLens('/Users/sebastian/University/Master/third term/sem-proj/kg-token/data/ml-100k/', 'cpu', 'rating')
     movielens.create_graph()
 
     gnn = GraphTokenEncoder(EMBEDDING_DIM, EMBEDDING_DIM)
@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     llm_wrapper = LLMWrapper(model_name=MODEL_NAME, user_emb=USER_EMB, movie_emb=MOVIE_EMB)
 
-    train_dataset = GraphQADataset(graph=movielens.test, llm_wrapper=llm_wrapper, max_tokens=25)
+    train_dataset = GraphQADataset(graph=movielens.test, llm_wrapper=llm_wrapper, max_tokens=25, edge_type='rating', random=False)
     train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
 
     config = dict(
@@ -33,7 +33,8 @@ if __name__ == '__main__':
         evaluation_steps=2,
         model_save_path='./model',
         optimizer='adam',
-        device='cuda' if torch.cuda.is_available() else 'cpu'
+        device='cuda' if torch.cuda.is_available() else 'cpu',
+        num_examples_per_epoch=-1
     )
 
     optimizer = torch.optim.Adam(gnn.parameters(), lr=config['learning_rate'])

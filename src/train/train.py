@@ -86,6 +86,10 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             )
             # loss = outputs.loss
             logits = outputs.logits
+            logits = logits[0, :-1]
+
+            labels = labels[0, 1:]
+            target_mask = target_mask[0, 1:]
 
             # Compute the loss using PyTorch's CrossEntropyLoss
             labels[target_mask == 0] = -100
