@@ -17,7 +17,7 @@ from src.models.language.LanguageModel import LLMWrapper
 
 
 def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
-          optimizer: torch.optim.Optimizer, config: Any):
+          optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler, config: Any):
     # Set GNN parameters to require gradients
     for param in gnn.parameters():
         param.requires_grad = True
@@ -110,6 +110,8 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
                 #print_output_of_llm(logits, llm_wrapper, labels)
 
             total_loss += loss.detach().item()
+
+            scheduler.step(loss.item())
 
         avg_loss = total_loss / len(dataloader)
         print(f"Epoch {epoch + 1}/{config['num_epochs']}, Loss: {avg_loss}")

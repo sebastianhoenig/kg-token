@@ -122,13 +122,16 @@ def example_evaluations(llm_wrapper, gnn, graph, dataloader: DataLoader, config:
                 labels=input_tokens
             )
             logits = outputs.logits
+            logits = logits[0, :-1]
 
+            target_mask = target_mask[0, 1:]
+            labels = input_tokens[0, 1:]
+            labels = labels[target_mask == 1]
             # Convert logits to predictions (max probability)
             predictions = torch.argmax(logits, dim=-1)
 
             # Mask out the padding tokens (target_mask == 0)
             predictions = predictions[target_mask == 1]
-            labels = input_tokens[target_mask == 1]
 
             tokenizer = llm_wrapper.get_tokenizer()
             predicted_tokens = tokenizer.convert_ids_to_tokens(predictions.squeeze().tolist())
