@@ -3,48 +3,45 @@ from typing import List, Dict, Union
 import numpy as np
 from torch.utils.data import Dataset
 from src.models.language.LanguageModel import LLMWrapper
-from random_word import RandomWords
 
 
 class GraphQADataset(Dataset):
     """QA LinkPrediction Dataset for Movielens Graph"""
 
-    def __init__(self, graph: HeteroData, llm_wrapper: LLMWrapper, max_tokens: int = 25, random: bool = False):
+    def __init__(self, graph: HeteroData, llm_wrapper: LLMWrapper, random, edge_type, max_tokens: int = 25):
         super().__init__()
         self.graph = graph
         self.llm_wrapper = llm_wrapper
         self.random = random
+        self.edge_type = edge_type
         self.data = self.graphqa_ds(max_tokens)
+
+    def _get_question_answer(self, label: int) -> tuple[str, str]:
+        if self.edge_type == "binary":
+            question = f"Q: Does user {self.llm_wrapper.USER_EMB} like movie {self.llm_wrapper.MOVIE_EMB}?\nA: "
+            answer = "Yes" if label == 1 else "No"
+        elif self.edge_type == "rating":
+            question = f"Q: How does user {self.llm_wrapper.USER_EMB} rate movie {self.llm_wrapper.MOVIE_EMB}?\nA: "
+            # Compare w/ How does user X rate movie Y on a scale from 1 to 5?
+            answer = str(label)
+        else:
+            raise ValueError(f"Unknown relationship type: {self.edge_type}")
+        return question, answer
 
     def _prepare_qa_dict(self) -> Dict[int, Dict[str, Union[str, List[int]]]]:
         qa_dict = {}
 
         user_movie_edges = self.graph["user", "likes", "movie"].edge_index
-        likes = self.graph["user", "likes", "movie"].edge_labels
+        labels = self.graph["user", "likes", "movie"].edge_labels
 
-        if not self.random:
-            for ind, (user_idx, movie_idx) in enumerate(zip(*user_movie_edges)):
-                answer = "Yes" if likes[ind] == 1 else "No"
-                qa_dict[ind] = {
-                    "question": f"Q: Does user {self.llm_wrapper.USER_EMB} like movie {self.llm_wrapper.MOVIE_EMB}?\nA: ",
-                    "answer": answer,
-                    "user_id": user_idx,
-                    "movie_id": movie_idx,
-                }
-        else:
-            r = RandomWords()
-            r1 = r.get_random_word()
-            r2 = r.get_random_word()
-            r3 = r.get_random_word()
-            r4 = r.get_random_word()
-            for ind, (user_idx, movie_idx) in enumerate(zip(*user_movie_edges)):
-                answer = "Yes" if likes[ind] == 1 else "No"
-                qa_dict[ind] = {
-                    "question": f"Q: {r1} {r2} {self.llm_wrapper.USER_EMB} {r3} {r4} {self.llm_wrapper.MOVIE_EMB}?\nA: ",
-                    "answer": answer,
-                    "user_id": user_idx,
-                    "movie_id": movie_idx,
-                }
+        for ind, (user_idx, movie_idx) in enumerate(zip(*user_movie_edges)):
+            question, answer = self._get_question_answer(labels[ind])
+            qa_dict[ind] = {
+                "question": question,
+                "answer": answer,
+                "user_id": user_idx,
+                "movie_id": movie_idx,
+            }
 
         return qa_dict
 
