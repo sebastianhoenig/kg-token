@@ -52,6 +52,8 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
 
         for batch in tqdm(islice(dataloader, num_examples_per_epoch), desc="Batch Progress", leave=False):
 
+            batch_size = len(batch[0])
+
             input_tokens, target_mask, attention_masks, user_ids, movie_ids = batch
 
             input_tokens = input_tokens.to(device)
@@ -122,6 +124,8 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
 
             accuracy = yes_no_accuracy(target_tokens, predicted_tokens)['yes_no_accuracy']
 
+            example_ct += batch_size
+            
             wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
             wandb.log({"epoch": epoch, "accuracy": accuracy}, step=example_ct)
             #print_output_of_llm(logits, llm_wrapper, labels)

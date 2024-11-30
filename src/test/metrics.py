@@ -8,9 +8,7 @@ graph tasks from nlgraph and graphqa.
 from typing import Mapping, Sequence
 
 
-def yes_no_accuracy(
-        targets: Sequence[str], predictions: Sequence[str]
-) -> Mapping[str, float]:
+def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str], print_res: bool=False) -> Mapping[str, float]:
     """Assesses the accuracy of LLM outputs on Yes/No tasks.
 
     Targets must contain either the word 'yes' or the word 'no' but not both.
@@ -62,9 +60,11 @@ def yes_no_accuracy(
             num_yes_preds += 1
         else:
             num_no_preds += 1
-    print("\n")
-    print(f"Number of 'Yes' predictions: {num_yes_preds}, Number of 'No' predictions: {num_no_preds}")
-    print("\n")
+
+    if print_res:
+        print("\n")
+        print(f"Number of 'Yes' predictions: {num_yes_preds}, Number of 'No' predictions: {num_no_preds}")
+        print("\n")
     return {
         'yes_no_accuracy': num_correct / len(targets),
         'yes_no_ambiguous': num_ambiguous / len(targets),
