@@ -33,7 +33,7 @@ class GraphQADataset(Dataset):
             else:
                 question = f"Q: How does user {self.llm_wrapper.USER_EMB} rate movie {self.llm_wrapper.MOVIE_EMB}?\nA: "
                 # Compare w/ How does user X rate movie Y on a scale from 1 to 5?
-            answer = str(label)
+            answer = str(int(label))
         else:
             raise ValueError(f"Unknown relationship type: {self.edge_type}")
         return question, answer
