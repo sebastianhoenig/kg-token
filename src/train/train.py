@@ -125,9 +125,11 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             accuracy = yes_no_accuracy(target_tokens, predicted_tokens)['yes_no_accuracy']
 
             example_ct += batch_size
-            
+            num_examples_per_epoch += batch_size
+
             wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
             wandb.log({"epoch": epoch, "accuracy": accuracy}, step=example_ct)
+            wandb.log({"epoch": epoch, "learning_rate": optimizer.param_groups[0]['lr']}, step=example_ct)
             #print_output_of_llm(logits, llm_wrapper, labels)
 
             total_loss += loss.detach().item()
