@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 from src.models.language.LanguageModel import LLMWrapper
+from src.test.metrics import yes_no_accuracy
 
 
 def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
@@ -24,6 +25,7 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
 
     # Freeze all LLM parameters
     llm = llm_wrapper.get_llm()
+    tokenizer = llm_wrapper.get_tokenizer()
     for param in llm.parameters():
         param.requires_grad = False  # Freezes the LLM parameters
 
@@ -49,65 +51,80 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
             num_examples_per_epoch = min(num_examples_per_epoch, len(dataloader))
 
         for batch in tqdm(islice(dataloader, num_examples_per_epoch), desc="Batch Progress", leave=False):
-            input_tokens, target_mask, attention_mask, user_id, movie_id = batch
+
+            input_tokens, target_mask, attention_masks, user_ids, movie_ids = batch
 
             input_tokens = input_tokens.to(device)
             target_mask = target_mask.to(device)
-            attention_mask = attention_mask.to(device)
-            user_id = user_id.to(device)
-            movie_id = movie_id.to(device)
+            attention_masks = attention_masks.to(device)
+            user_ids = user_ids.to(device)
+            movie_ids = movie_ids.to(device)
 
             embedding = gnn(graph.x_dict, graph.edge_index_dict)
 
-            movie_embedding = embedding['movie'][movie_id].to(device)
-            user_embedding = embedding['user'][user_id].to(device)
-
-            user_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids(USER_EMB)
-            movie_token_id = llm_wrapper.get_tokenizer().convert_tokens_to_ids(MOVIE_EMB)
-
-            labels = input_tokens.clone().to(device)
-            labels = labels.to(device)
+            batch_embeddings = []
+            batch_attention_masks = []
+            batch_labels = []
 
             base_embeddings = llm.get_input_embeddings().weight
 
-            # Create a modified embedding matrix
-            modified_embeddings = base_embeddings.clone()
-            modified_embeddings[user_token_id] = user_embedding
-            modified_embeddings[movie_token_id] = movie_embedding
+            for i, (user_id, movie_id) in enumerate(zip(user_ids, movie_ids)):
+                movie_embedding = embedding['movie'][movie_id].to(device)
+                user_embedding = embedding['user'][user_id].to(device)
 
-            # Embed input tokens using the modified embeddings
-            input_embeddings = F.embedding(input_tokens, modified_embeddings)
+                user_token_id = tokenizer.convert_tokens_to_ids(USER_EMB)
+                movie_token_id = tokenizer.convert_tokens_to_ids(MOVIE_EMB)
+
+                # Create a modified embedding matrix
+                modified_embeddings = base_embeddings.clone()
+                modified_embeddings[user_token_id] = user_embedding
+                modified_embeddings[movie_token_id] = movie_embedding
+
+                # Embed input tokens using the modified embeddings
+                input_embeddings = F.embedding(input_tokens[i], modified_embeddings)
+
+                batch_embeddings.append(input_embeddings)
+                batch_attention_masks.append(attention_masks[i])
+                batch_labels.append(input_tokens[i].clone())
+
+            batch_embeddings = torch.stack(batch_embeddings)
+            batch_attention_masks = torch.stack(batch_attention_masks)
+            batch_labels = torch.stack(batch_labels)
 
             # Forward pass through the LLM
             outputs = llm(
-                inputs_embeds=input_embeddings,  # Use custom embeddings
-                attention_mask=attention_mask,
-                labels=labels
+                inputs_embeds=batch_embeddings,  # Use custom embeddings
+                attention_mask=batch_attention_masks,
+                labels=batch_labels
             )
+
             # loss = outputs.loss
             logits = outputs.logits
-            logits = logits[0, :-1]
+            logits = logits[:, :-1, :].contiguous()
 
-            labels = labels[0, 1:]
-            target_mask = target_mask[0, 1:]
+            batch_labels = batch_labels[:, 1:]
+            target_mask = target_mask[:, 1:]
 
             # Compute the loss using PyTorch's CrossEntropyLoss
-            labels[target_mask == 0] = -100
+            batch_labels[target_mask == 0] = -100
             loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
-            loss = loss_fn(logits.squeeze(), labels.squeeze())
-
-            if example_ct == 0:
-                wandb.watch(llm, log="all", log_freq=10000)
-                wandb.watch(gnn, log="all", log_freq=10000)
+            loss = loss_fn(logits.flatten(0, 1), batch_labels.flatten())
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            example_ct += 1
-            if example_ct % 10 == 0:
-                wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
-                #print_output_of_llm(logits, llm_wrapper, labels)
+            predictions = torch.argmax(logits, dim=-1)
+            predictions = predictions[target_mask == 1]
+            labels = batch_labels[target_mask == 1]
+            predicted_tokens = tokenizer.convert_ids_to_tokens(predictions)
+            target_tokens = tokenizer.convert_ids_to_tokens(labels)
+
+            accuracy = yes_no_accuracy(target_tokens, predicted_tokens)['yes_no_accuracy']
+
+            wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
+            wandb.log({"epoch": epoch, "accuracy": accuracy}, step=example_ct)
+            #print_output_of_llm(logits, llm_wrapper, labels)
 
             total_loss += loss.detach().item()
 

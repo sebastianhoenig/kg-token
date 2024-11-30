@@ -68,7 +68,6 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
             all_preds.append(predicted_strings)
             all_labels.append(target_strings)
 
-
     results = yes_no_accuracy(all_labels, all_preds)
     print(f"Accuracy: {results['yes_no_accuracy']}, Ambiguous: {results['yes_no_ambiguous']}, "
           f"Indeterminate: {results['yes_no_indeterminate']}")

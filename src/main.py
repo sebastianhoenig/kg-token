@@ -15,7 +15,7 @@ if __name__ == '__main__':
     MOVIE_EMB = "<MOVIE>"
     MODEL_NAME = 'gpt2'
 
-    movielens = MovieLens('/Users/sebastian/University/Master/third term/sem-proj/kg-token/data/ml-100k/', 'cpu', 'rating')
+    movielens = MovieLens('/Users/sebastian/University/Master/third term/sem-proj/kg-token/data/ml-100k/', 'cpu', 'binary')
     movielens.create_graph()
 
     gnn = GraphTokenEncoder(EMBEDDING_DIM, EMBEDDING_DIM)
@@ -23,8 +23,8 @@ if __name__ == '__main__':
 
     llm_wrapper = LLMWrapper(model_name=MODEL_NAME, user_emb=USER_EMB, movie_emb=MOVIE_EMB)
 
-    train_dataset = GraphQADataset(graph=movielens.test, llm_wrapper=llm_wrapper, max_tokens=25, edge_type='rating', random=False)
-    train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+    train_dataset = GraphQADataset(graph=movielens.test, llm_wrapper=llm_wrapper, max_tokens=25, edge_type='binary', random=False)
+    train_dataloader = DataLoader(train_dataset, batch_size=2, shuffle=True)
 
     config = dict(
         num_epochs=10,
@@ -38,5 +38,6 @@ if __name__ == '__main__':
     )
 
     optimizer = torch.optim.Adam(gnn.parameters(), lr=config['learning_rate'])
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)
 
-    train(llm_wrapper, gnn, movielens.train, train_dataloader, optimizer, config)
+    train(llm_wrapper, gnn, movielens.train, train_dataloader, optimizer, scheduler, config)
