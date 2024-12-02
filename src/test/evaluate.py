@@ -15,14 +15,14 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
     llm.eval()
     gnn.eval()
 
-    all_logits = []
-    all_labels = []
-    all_target_masks = []
-
     USER_EMB = llm_wrapper.USER_EMB
     MOVIE_EMB = llm_wrapper.MOVIE_EMB
 
     tokenizer = llm_wrapper.get_tokenizer()
+
+    total_yes_preds, total_no_preds = 0, 0
+    total_yes_targets, total_no_targets = 0, 0
+    total_correct, total_items = 0, 0
 
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Evaluating"):
@@ -42,19 +42,25 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
             )
             logits = outputs.logits
 
-            all_logits.append(logits)
-            all_labels.append(batch_labels)
-            all_target_masks.append(target_mask)
+            batch_res = get_batch_accuracy(batch_labels, logits, target_mask, tokenizer)
 
-    all_logits = torch.stack(all_logits)
-    all_labels = torch.stack(all_labels)
-    all_target_masks = torch.stack(all_target_masks)
+            total_yes_preds += batch_res['num_yes_preds']
+            total_no_preds += batch_res['num_no_preds']
+            total_yes_targets += batch_res['num_yes_targets']
+            total_no_targets += batch_res['num_no_targets']
+            total_correct += batch_res['num_correct']
+            total_items += batch_res['num_items']
 
-    res = get_batch_accuracy(all_labels, all_logits, all_target_masks, tokenizer)
+    overall_accuracy = total_correct / total_items if total_items > 0 else 0
+    aggregated_res = {
+        "yes_no_accuracy": overall_accuracy,
+        "num_yes_preds": total_yes_preds,
+        "num_no_preds": total_no_preds,
+        "num_yes_targets": total_yes_targets,
+        "num_no_targets": total_no_targets
+    }
 
-    log_evaluation_to_wandb(res)
-
-    return res
+    log_evaluation_to_wandb(aggregated_res)
 
 
 def example_evaluations(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict, num_samples=10):

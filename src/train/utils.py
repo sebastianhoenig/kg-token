@@ -51,11 +51,13 @@ def get_batch_accuracy(batch_labels, logits, target_mask, tokenizer):
 
 
 def log_to_wandb(res, epoch, example_ct, loss, optimizer):
-    accuracy = res['yes_no_accuracy']
     yes_preds = res['num_yes_preds']
     no_preds = res['num_no_preds']
     yes_targets = res['num_yes_targets']
     no_targets = res['num_no_targets']
+    num_items = res['num_items']
+    num_correct = res['num_correct']
+    accuracy = num_correct / num_items
 
     wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
     wandb.log({"epoch": epoch, "accuracy": accuracy}, step=example_ct)
@@ -65,11 +67,14 @@ def log_to_wandb(res, epoch, example_ct, loss, optimizer):
 
 
 def log_evaluation_to_wandb(res):
-    accuracy = res['yes_no_accuracy']
     yes_preds = res['num_yes_preds']
     no_preds = res['num_no_preds']
     yes_targets = res['num_yes_targets']
     no_targets = res['num_no_targets']
+    num_items = res['num_items']
+    num_correct = res['num_correct']
+
+    accuracy = num_correct/num_items
 
     wandb.log({
         "evaluation/accuracy": accuracy,
