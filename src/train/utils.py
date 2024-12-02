@@ -76,10 +76,16 @@ def log_evaluation_to_wandb(res):
 
     accuracy = num_correct/num_items if num_items > 0 else 0
 
-    wandb.log({
-        "evaluation/accuracy": accuracy,
-        "evaluation/yes_preds": yes_preds,
-        "evaluation/yes_targets": yes_targets,
-        "evaluation/no_preds": no_preds,
-        "evaluation/no_targets": no_targets
-    })
+    table = wandb.Table(columns=["Metric", "Value"])
+
+    # Add metrics to the table
+    table.add_data("accuracy", accuracy)
+    table.add_data("yes_preds", yes_preds)
+    table.add_data("yes_targets", yes_targets)
+    table.add_data("no_preds", no_preds)
+    table.add_data("no_targets", no_targets)
+    table.add_data("num_items", num_items)
+    table.add_data("num_correct", num_correct)
+
+    wandb.log({"evaluation_table": table})
+    
