@@ -88,4 +88,3 @@ def log_evaluation_to_wandb(res):
     table.add_data("num_correct", num_correct)
 
     wandb.log({"evaluation_table": table})
-    

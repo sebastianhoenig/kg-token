@@ -10,7 +10,7 @@ from torch_geometric.data import HeteroData
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
-from src.models.language.LanguageModel import LLMWrapper
+from src.models.LanguageModel import LLMWrapper
 from src.train.utils import prepare_inputs, get_batch_accuracy, log_to_wandb
 
 
