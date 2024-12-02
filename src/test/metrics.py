@@ -55,7 +55,6 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
             continue
         if not binarized_prediction and 'no' not in normalized_prediction:
             num_indeterminate += 1
-            continue
         if binarized_prediction == binarized_target:
             num_correct += 1
         if binarized_prediction:
