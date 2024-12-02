@@ -124,4 +124,4 @@ def example_evaluations(llm_wrapper, gnn, graph, dataloader: DataLoader, config:
 
     print(f"Selected {num_samples} Examples: ")
     for pred, true_label in zip(all_preds[:num_samples], all_labels[:num_samples]):
-        print(f"Predicted: {pred}, True: {true_label}")
+        print(f"Predicted: {pred} \nTrue: {true_label}")
