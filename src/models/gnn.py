@@ -23,7 +23,7 @@ class GATConvTokenEncoder(nn.Module):
         self.conv2 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
         #self.projection = nn.Linear(hidden_channels, out_channels)
         self.projection = nn.Sequential(
-            nn.Linear(hidden_channels, (out_channels+hidden_channels)//2),
+            nn.Linear(hidden_channels, (out_channels+hidden_channels)//2).relu(),
             nn.Sigmoid(),
             nn.Linear((out_channels+hidden_channels)//2, out_channels))
 
