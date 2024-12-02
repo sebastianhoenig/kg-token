@@ -19,8 +19,8 @@ class SAGEConvTokenEncoder(nn.Module):
 class GATConvTokenEncoder(nn.Module):
     def __init__(self, hidden_channels, out_channels):
         super().__init__()
-        self.conv1 = GATConv((-1, -1), hidden_channels)
-        self.conv2 = GATConv((-1, -1), hidden_channels)
+        self.conv1 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
+        self.conv2 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
         self.projection = nn.Linear(hidden_channels, out_channels)
 
     def forward(self, x, edge_index):
@@ -33,8 +33,8 @@ class GATConvTokenEncoder(nn.Module):
 class GATv2ConvTokenEncoder(nn.Module):
     def __init__(self, hidden_channels, out_channels):
         super().__init__()
-        self.conv1 = GATv2Conv((-1, -1), hidden_channels)
-        self.conv2 = GATv2Conv((-1, -1), hidden_channels)
+        self.conv1 = GATv2Conv((-1, -1), hidden_channels, add_self_loops=False)
+        self.conv2 = GATv2Conv((-1, -1), hidden_channels, add_self_loops=False)
         self.projection = nn.Linear(hidden_channels, out_channels)
 
     def forward(self, x, edge_index):
@@ -70,4 +70,4 @@ class GINConvTokenEncoder(nn.Module):
         x = self.conv2(x, edge_index).relu()
         x = self.projection(x)
         return x
-    
+
