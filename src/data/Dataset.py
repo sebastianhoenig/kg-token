@@ -3,7 +3,7 @@ from typing import List, Dict, Union
 import numpy as np
 import random
 from torch.utils.data import Dataset
-from src.models.language.LanguageModel import LLMWrapper
+from src.models.LanguageModel import LLMWrapper
 
 
 class GraphQADataset(Dataset):
