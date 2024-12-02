@@ -10,11 +10,11 @@ from torch_geometric.data import HeteroData
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
-from src.models.LanguageModel import LLMWrapper
+from src.models.llm import LLM
 from src.train.utils import prepare_inputs, get_batch_accuracy, log_to_wandb
 
 
-def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
+def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
           optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler, config: Any):
     # Set GNN parameters to require gradients
     for param in gnn.parameters():

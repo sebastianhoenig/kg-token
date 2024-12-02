@@ -2,7 +2,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch import nn
 
 
-class LLMWrapper(nn.Module):
+class LLM(nn.Module):
     def __init__(self, model_name="gpt2", user_emb: str = "<USER>", movie_emb: str = "<MOVIE>"):
         super().__init__()
         self.model_name = model_name

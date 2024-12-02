@@ -38,9 +38,14 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
             outputs = llm(
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
-                labels=input_tokens
+                labels=batch_labels
             )
             logits = outputs.logits
+
+            logits = logits[:, :-1, :].contiguous()
+
+            batch_labels = batch_labels[:, 1:]
+            target_mask = target_mask[:, 1:]
 
             batch_res = get_batch_accuracy(batch_labels, logits, target_mask, tokenizer)
 
@@ -61,6 +66,8 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
     }
 
     log_evaluation_to_wandb(aggregated_res)
+
+    return aggregated_res
 
 
 def example_evaluations(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict, num_samples=10):
@@ -95,22 +102,22 @@ def example_evaluations(llm_wrapper, gnn, graph, dataloader: DataLoader, config:
             outputs = llm(
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
-                labels=input_tokens
+                labels=batch_labels
             )
+
             logits = outputs.logits
-            logits = logits[0, :-1]
+            logits = logits[:, :-1, :].contiguous()
 
-            target_mask = target_mask[0, 1:]
-            labels = input_tokens[0, 1:]
-            labels = labels[target_mask == 1]
-            # Convert logits to predictions (max probability)
-            predictions = torch.argmax(logits, dim=-1)
+            batch_labels = batch_labels[:, 1:]
+            target_mask = target_mask[:, 1:]
 
-            # Mask out the padding tokens (target_mask == 0)
+            predictions = torch.argmax(logits, dim=-1)  # Convert logits to predictions (max probability)
+
+            # Mask out the non target-tokens
             predictions = predictions[target_mask == 1]
-
+            batch_labels = batch_labels[target_mask == 1]
             predicted_tokens = tokenizer.convert_ids_to_tokens(predictions.squeeze().tolist())
-            target_tokens = tokenizer.convert_ids_to_tokens(labels.squeeze().tolist())
+            target_tokens = tokenizer.convert_ids_to_tokens(batch_labels.squeeze().tolist())
 
             all_preds.append(predicted_tokens)
             all_labels.append(target_tokens)
