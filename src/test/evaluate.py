@@ -1,9 +1,8 @@
 import torch
 import random
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from src.train.utils import prepare_inputs, get_batch_accuracy
+from src.train.utils import prepare_inputs, get_batch_accuracy, log_evaluation_to_wandb
 
 
 def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
@@ -52,8 +51,8 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
     all_target_masks = torch.stack(all_target_masks)
 
     res = get_batch_accuracy(all_labels, all_logits, all_target_masks, tokenizer)
-    print(f"Accuracy: {res['yes_no_accuracy']}, Ambiguous: {res['yes_no_ambiguous']}, "
-          f"Indeterminate: {res['yes_no_indeterminate']}")
+
+    log_evaluation_to_wandb(res)
 
     return res
 

@@ -34,6 +34,8 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str], print_re
     num_indeterminate = 0
     num_yes_preds = 0
     num_no_preds = 0
+    num_yes_targets = 0
+    num_no_targets = 0
     for target, prediction in zip(targets, predictions):
         normalized_target = target.lower()
         binarized_target = 'yes' in normalized_target
@@ -60,6 +62,10 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str], print_re
             num_yes_preds += 1
         else:
             num_no_preds += 1
+        if binarized_target:
+            num_yes_targets += 1
+        else:
+            num_no_targets += 1
 
     if print_res:
         print("\n")
@@ -72,5 +78,7 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str], print_re
         'yes_no_ambiguous': num_ambiguous / len(targets),
         'yes_no_indeterminate': num_indeterminate / len(targets),
         'num_yes_preds': num_yes_preds,
-        'num_no_preds': num_no_preds
+        'num_no_preds': num_no_preds,
+        'num_yes_targets': num_yes_targets,
+        'num_no_targets': num_no_targets
     }

@@ -4,7 +4,6 @@ from torch import nn
 from torch.utils.data import DataLoader
 import torch
 import tqdm
-import wandb
 from tqdm.notebook import tqdm
 
 from torch_geometric.data import HeteroData
@@ -12,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 from src.models.language.LanguageModel import LLMWrapper
-from src.train.utils import prepare_inputs, get_batch_accuracy
+from src.train.utils import prepare_inputs, get_batch_accuracy, log_to_wandb
 
 
 def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
@@ -85,20 +84,6 @@ def train(llm_wrapper: LLMWrapper, gnn: nn.Module, graph: HeteroData, dataloader
 
         avg_loss = total_loss / len(dataloader)
         print(f"Epoch {epoch + 1}/{config['num_epochs']}, Loss: {avg_loss}")
-
-    wandb.finish()
-
-
-def log_to_wandb(res, epoch, example_ct, loss, optimizer):
-    accuracy = res['yes_no_accuracy']
-    yes_preds = res['num_yes_preds']
-    no_preds = res['num_no_preds']
-    ratio = yes_preds / no_preds if no_preds != 0 else yes_preds
-
-    wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
-    wandb.log({"epoch": epoch, "accuracy": accuracy}, step=example_ct)
-    wandb.log({"epoch": epoch, "learning_rate": optimizer.param_groups[0]['lr']}, step=example_ct)
-    wandb.log({"epoch": epoch, "Ratio Yes/No Predictions": ratio}, step=example_ct)
 
 
 def print_output_of_llm(logits, llm_wrapper, labels):

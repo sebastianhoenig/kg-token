@@ -1,4 +1,5 @@
 import torch
+import wandb
 import torch.nn.functional as F
 from src.test.metrics import yes_no_accuracy
 
@@ -47,3 +48,33 @@ def get_batch_accuracy(batch_labels, logits, target_mask, tokenizer):
     target_tokens = tokenizer.convert_ids_to_tokens(labels)
     res = yes_no_accuracy(target_tokens, predicted_tokens)
     return res
+
+
+def log_to_wandb(res, epoch, example_ct, loss, optimizer):
+    accuracy = res['yes_no_accuracy']
+    yes_preds = res['num_yes_preds']
+    no_preds = res['num_no_preds']
+    yes_targets = res['num_yes_targets']
+    no_targets = res['num_no_targets']
+
+    wandb.log({"epoch": epoch, "loss": loss}, step=example_ct)
+    wandb.log({"epoch": epoch, "accuracy": accuracy}, step=example_ct)
+    wandb.log({"epoch": epoch, "learning_rate": optimizer.param_groups[0]['lr']}, step=example_ct)
+    wandb.log({"epoch": epoch, "yes_preds": yes_preds, "yes_targets": yes_targets}, step=example_ct)
+    wandb.log({"epoch": epoch, "no_preds": no_preds, "no_targets": no_targets}, step=example_ct)
+
+
+def log_evaluation_to_wandb(res):
+    accuracy = res['yes_no_accuracy']
+    yes_preds = res['num_yes_preds']
+    no_preds = res['num_no_preds']
+    yes_targets = res['num_yes_targets']
+    no_targets = res['num_no_targets']
+
+    wandb.log({
+        "evaluation/accuracy": accuracy,
+        "evaluation/yes_preds": yes_preds,
+        "evaluation/yes_targets": yes_targets,
+        "evaluation/no_preds": no_preds,
+        "evaluation/no_targets": no_targets
+    })
