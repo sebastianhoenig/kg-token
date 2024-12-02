@@ -1,4 +1,4 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModelForSeq2SeqLM
 from torch import nn
 
 
@@ -24,5 +24,9 @@ class LLM(nn.Module):
         self.llm.resize_token_embeddings(len(self.tokenizer))
 
 
-
-
+class T5(LLM):
+    def __init__(self, model_name="google/flan-t5-large"):
+        super().__init__()
+        self.model_name = model_name
+        self.llm = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)

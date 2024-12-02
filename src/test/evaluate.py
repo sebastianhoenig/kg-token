@@ -2,7 +2,8 @@ import torch
 import random
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from src.train.utils import prepare_inputs, get_batch_accuracy, log_evaluation_to_wandb
+from src.train.utils import prepare_inputs, get_batch_accuracy
+from src.utils.logging import log_evaluation_to_wandb
 
 
 def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):

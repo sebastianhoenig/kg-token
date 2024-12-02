@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 from src.models.llm import LLM
-from src.train.utils import prepare_inputs, get_batch_accuracy, log_to_wandb
+from src.train.utils import prepare_inputs, get_batch_accuracy
+from src.utils.logging import log_to_wandb
 
 
 def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
