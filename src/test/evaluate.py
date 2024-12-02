@@ -51,13 +51,13 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
             total_correct += batch_res['num_correct']
             total_items += batch_res['num_items']
 
-    overall_accuracy = total_correct / total_items if total_items > 0 else 0
     aggregated_res = {
-        "yes_no_accuracy": overall_accuracy,
+        "num_correct": total_correct,
         "num_yes_preds": total_yes_preds,
         "num_no_preds": total_no_preds,
         "num_yes_targets": total_yes_targets,
-        "num_no_targets": total_no_targets
+        "num_no_targets": total_no_targets,
+        "num_items": total_items,
     }
 
     log_evaluation_to_wandb(aggregated_res)

@@ -22,9 +22,9 @@ class GraphQADataset(Dataset):
         if self.edge_type == "binary":
             if self.random:
                 r1, r2, r3, r4 = random.choices(self.random_strings, k=4)
-                question = f"Question: {r1} {r2} {self.llm_wrapper.USER_EMB} {r3} {r4} {self.llm_wrapper.MOVIE_EMB}? Answer with Yes or No.\n\nAnswer: "
+                question = f"Question: {r1} {r2} {self.llm_wrapper.USER_EMB} {r3} {r4} {self.llm_wrapper.MOVIE_EMB}?\n\nAnswer: "
             else:
-                question = f"Question: Does user {self.llm_wrapper.USER_EMB} like movie {self.llm_wrapper.MOVIE_EMB}? Answer with Yes or No.\n\nAnswer: "
+                question = f"Question: Does user {self.llm_wrapper.USER_EMB} like movie {self.llm_wrapper.MOVIE_EMB}?\n\nAnswer: "
             answer = "Yes" if label == 1 else "No"
         elif self.edge_type == "rating":
             if self.random:

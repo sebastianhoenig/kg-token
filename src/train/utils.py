@@ -74,7 +74,7 @@ def log_evaluation_to_wandb(res):
     num_items = res['num_items']
     num_correct = res['num_correct']
 
-    accuracy = num_correct/num_items
+    accuracy = num_correct/num_items if num_items > 0 else 0
 
     wandb.log({
         "evaluation/accuracy": accuracy,

@@ -22,6 +22,10 @@ class GATConvTokenEncoder(nn.Module):
         self.conv1 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
         self.conv2 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
         self.projection = nn.Linear(hidden_channels, out_channels)
+        #self.projection = nn.Sequential(
+        #    nn.Linear(hidden_channels, (out_channels+hidden_channels)//2),
+        #    nn.Sigmoid(),
+        #    nn.Linear((out_channels+hidden_channels)//2, out_channels))
 
     def forward(self, x, edge_index):
         x = self.conv1(x, edge_index).relu()
@@ -71,3 +75,17 @@ class GINConvTokenEncoder(nn.Module):
         x = self.projection(x)
         return x
 
+
+def get_gnn_model(model: str, hidden_dim: int, out_dim: int):
+    if model == "SAGE":
+        return SAGEConvTokenEncoder(hidden_dim, out_dim)
+    elif model == "GAT":
+        return GATConvTokenEncoder(hidden_dim, out_dim)
+    elif model == "GATv2":
+        return GATv2ConvTokenEncoder(hidden_dim, out_dim)
+    elif model == "Transformer":
+        return TransformerConvTokenEncoder(hidden_dim, out_dim)
+    elif model == "GIN":
+        return GINConvTokenEncoder(hidden_dim, out_dim)
+    else:
+        raise ValueError(f"Invalid model name: {model}")
