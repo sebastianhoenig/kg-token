@@ -65,8 +65,12 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str], print_re
         print("\n")
         print(f"Number of 'Yes' predictions: {num_yes_preds}, Number of 'No' predictions: {num_no_preds}")
         print("\n")
+
+
     return {
         'yes_no_accuracy': num_correct / len(targets),
         'yes_no_ambiguous': num_ambiguous / len(targets),
         'yes_no_indeterminate': num_indeterminate / len(targets),
+        'num_yes_preds': num_yes_preds,
+        'num_no_preds': num_no_preds
     }
