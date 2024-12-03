@@ -21,9 +21,7 @@ class GATConvTokenEncoder(nn.Module):
         super().__init__()
         self.conv1 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
         self.conv2 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
-        self.bn1 = nn.BatchNorm1d(hidden_channels)
         self.conv3 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
-        self.bn2 = nn.BatchNorm1d(hidden_channels)
         self.conv4 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
         self.projection = nn.Linear(hidden_channels, out_channels)
         #self.projection = nn.Sequential(
