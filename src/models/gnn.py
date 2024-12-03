@@ -1,6 +1,6 @@
 import torch.nn as nn
 from torch_geometric.nn import SAGEConv, GATConv, GATv2Conv, TransformerConv, GINConv
-
+import torch.nn.functional as F
 
 class SAGEConvTokenEncoder(nn.Module):
     def __init__(self, hidden_channels, out_channels):
@@ -37,6 +37,29 @@ class GATConvTokenEncoder(nn.Module):
         x = self.bn2(x)
         x = self.projection(x)
         return x
+
+
+class GAT(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, num_layers, dropout, num_heads=4):
+        super(GAT, self).__init__()
+        self.convs = nn.ModuleList()
+        self.convs.append(GATConv(in_channels, hidden_channels, heads=num_heads, concat=False))
+        self.bns = nn.ModuleList()
+        self.bns.append(nn.BatchNorm1d(hidden_channels))
+        for _ in range(num_layers - 2):
+            self.convs.append(GATConv(hidden_channels, hidden_channels, heads=num_heads, concat=False))
+            self.bns.append(nn.BatchNorm1d(hidden_channels))
+        self.convs.append(GATConv(hidden_channels, out_channels, heads=num_heads, concat=False))
+        self.dropout = dropout
+
+    def forward(self, x, edge_index, edge_attr=None):
+        for i, conv in enumerate(self.convs[:-1]):
+            x, edge_attr = conv(x, edge_index=edge_index, edge_attr=edge_attr, )
+            x = self.bns[i](x)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x, edge_attr = self.convs[-1](x, edge_index=edge_index, edge_attr=edge_attr)
+        return x, edge_attr
 
 
 class GATv2ConvTokenEncoder(nn.Module):
