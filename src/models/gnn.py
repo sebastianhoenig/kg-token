@@ -19,12 +19,12 @@ class SAGEConvTokenEncoder(nn.Module):
 class GATConvTokenEncoder(nn.Module):
     def __init__(self, hidden_channels, out_channels):
         super().__init__()
-        self.conv1 = GATConv((-1, -1), hidden_channels, add_self_loops=False, num_heads=4)
-        self.conv2 = GATConv((-1, -1), hidden_channels, add_self_loops=False, num_heads=4)
+        self.conv1 = GATConv((-1, -1), hidden_channels, add_self_loops=False, heads=4)
+        self.conv2 = GATConv((-1, -1), hidden_channels, add_self_loops=False, heads=4)
         self.bn1 = nn.BatchNorm1d(hidden_channels)
-        self.conv3 = GATConv((-1, -1), hidden_channels, add_self_loops=False, num_heads=4)
+        self.conv3 = GATConv((-1, -1), hidden_channels, add_self_loops=False, heads=4)
         self.bn2 = nn.BatchNorm1d(hidden_channels)
-        self.conv4 = GATConv((-1, -1), hidden_channels, add_self_loops=False, num_heads=4)
+        self.conv4 = GATConv((-1, -1), hidden_channels, add_self_loops=False, heads=4)
         self.projection = nn.Linear(hidden_channels, out_channels)
         #self.projection = nn.Sequential(
         #    nn.Linear(hidden_channels, (out_channels+hidden_channels)//2),
