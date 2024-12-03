@@ -19,10 +19,12 @@ class SAGEConvTokenEncoder(nn.Module):
 class GATConvTokenEncoder(nn.Module):
     def __init__(self, hidden_channels, out_channels):
         super().__init__()
-        self.conv1 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
+        self.conv1 = GATConv((-1, -1), hidden_channels, add_self_loops=False, num_heads=4)
+        self.conv2 = GATConv((-1, -1), hidden_channels, add_self_loops=False, num_heads=4)
         self.bn1 = nn.BatchNorm1d(hidden_channels)
-        self.conv2 = GATConv((-1, -1), hidden_channels, add_self_loops=False)
+        self.conv3 = GATConv((-1, -1), hidden_channels, add_self_loops=False, num_heads=4)
         self.bn2 = nn.BatchNorm1d(hidden_channels)
+        self.conv4 = GATConv((-1, -1), hidden_channels, add_self_loops=False, num_heads=4)
         self.projection = nn.Linear(hidden_channels, out_channels)
         #self.projection = nn.Sequential(
         #    nn.Linear(hidden_channels, (out_channels+hidden_channels)//2),
@@ -32,34 +34,13 @@ class GATConvTokenEncoder(nn.Module):
 
     def forward(self, x, edge_index):
         x = self.conv1(x, edge_index).relu()
-        x = self.bn1(x)
         x = self.conv2(x, edge_index).relu()
+        x = self.bn1(x)
+        x = self.conv3(x, edge_index).relu()
         x = self.bn2(x)
+        x = self.conv4(x, edge_index).relu()
         x = self.projection(x)
         return x
-
-
-class GAT(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, num_layers, dropout, num_heads=4):
-        super(GAT, self).__init__()
-        self.convs = nn.ModuleList()
-        self.convs.append(GATConv(in_channels, hidden_channels, heads=num_heads, concat=False))
-        self.bns = nn.ModuleList()
-        self.bns.append(nn.BatchNorm1d(hidden_channels))
-        for _ in range(num_layers - 2):
-            self.convs.append(GATConv(hidden_channels, hidden_channels, heads=num_heads, concat=False))
-            self.bns.append(nn.BatchNorm1d(hidden_channels))
-        self.convs.append(GATConv(hidden_channels, out_channels, heads=num_heads, concat=False))
-        self.dropout = dropout
-
-    def forward(self, x, edge_index, edge_attr=None):
-        for i, conv in enumerate(self.convs[:-1]):
-            x, edge_attr = conv(x, edge_index=edge_index, edge_attr=edge_attr, )
-            x = self.bns[i](x)
-            x = F.relu(x)
-            x = F.dropout(x, p=self.dropout, training=self.training)
-        x, edge_attr = self.convs[-1](x, edge_index=edge_index, edge_attr=edge_attr)
-        return x, edge_attr
 
 
 class GATv2ConvTokenEncoder(nn.Module):
