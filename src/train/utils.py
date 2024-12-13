@@ -14,7 +14,7 @@ def prepare_inputs(MOVIE_EMB, USER_EMB, attention_masks, device, gnn, graph, inp
     batch_embeddings = []
     batch_attention_masks = []
     batch_labels = []
-    base_embeddings = llm.get_input_embeddings().weight
+    base_embeddings = llm.model.get_input_embeddings().weight
     for i, (user_id, movie_id) in enumerate(zip(user_ids, movie_ids)):
         movie_embedding = embedding['movie'][movie_id].to(device)
         user_embedding = embedding['user'][user_id].to(device)
