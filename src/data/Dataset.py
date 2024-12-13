@@ -66,8 +66,8 @@ class GraphQADataset(Dataset):
             answer = qa["answer"]
             user_id = qa["user_id"]
             movie_id = qa["movie_id"]
-            query_tokens = tokenizer(question)["input_ids"]
-            answer_tokens = tokenizer(answer)["input_ids"]
+            query_tokens = tokenizer(question, add_special_tokens=False)["input_ids"]
+            answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = tokenizer.eos_token_id  # TODO CHANGE WHEN NO LONGER GPT2
             EOS_TOKEN = tokenizer.eos_token_id
             PAD_TOKEN = tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2

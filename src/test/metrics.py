@@ -29,6 +29,8 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
     Raises:
       ValueError: If a target string contains 'yes' and 'no'
     """
+    print(targets)
+    print(predictions)
     num_correct = 0
     num_ambiguous = 0
     num_indeterminate = 0
@@ -52,15 +54,18 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
         binarized_prediction = 'yes' in normalized_prediction.lower()
         if binarized_prediction and 'no' in normalized_prediction:
             num_ambiguous += 1
-            continue
-        if not binarized_prediction and 'no' not in normalized_prediction:
+        elif not binarized_prediction and 'no' not in normalized_prediction:
             num_indeterminate += 1
-        if binarized_prediction == binarized_target:
-            num_correct += 1
-        if binarized_prediction:
-            num_yes_preds += 1
-        else:
+        elif binarized_prediction == binarized_target and 'no' in normalized_prediction:
             num_no_preds += 1
+            num_correct += 1
+        elif binarized_prediction != binarized_target and 'no' in normalized_prediction:
+            num_no_preds += 1
+        elif binarized_prediction == binarized_target and 'yes' in normalized_prediction:
+            num_yes_preds += 1
+            num_correct += 1
+        elif binarized_prediction == binarized_target and 'yes' in normalized_prediction:
+            num_yes_preds += 1
         if binarized_target:
             num_yes_targets += 1
         else:
@@ -74,5 +79,5 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
         'num_yes_preds': num_yes_preds,
         'num_no_preds': num_no_preds,
         'num_yes_targets': num_yes_targets,
-        'num_no_targets': num_no_targets
+        'num_no_targets': num_no_targets,
     }

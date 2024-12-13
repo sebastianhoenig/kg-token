@@ -2,9 +2,9 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.graph.Movielens100k import MovieLens
-from src.models.graph.GraphModel import SAGEConvTokenEncoder
+from src.models.gnn import GATConvTokenEncoder
 from torch_geometric.nn import to_hetero
-from src.models.language.LanguageModel import LLMWrapper
+from src.models.llm import LLM
 from src.train.train import train
 from src.data.Dataset import GraphQADataset
 
@@ -18,10 +18,10 @@ if __name__ == '__main__':
     movielens = MovieLens('/Users/sebastian/University/Master/third term/sem-proj/kg-token/data/ml-100k/', 'cpu', 'rating')
     movielens.create_graph()
 
-    gnn = SAGEConvTokenEncoder(EMBEDDING_DIM, EMBEDDING_DIM)
+    gnn = GATConvTokenEncoder(EMBEDDING_DIM, EMBEDDING_DIM)
     gnn = to_hetero(gnn, movielens.train.metadata(), aggr='sum')
 
-    llm_wrapper = LLMWrapper(model_name=MODEL_NAME, user_emb=USER_EMB, movie_emb=MOVIE_EMB)
+    llm_wrapper = LLM(model_name=MODEL_NAME, user_emb=USER_EMB, movie_emb=MOVIE_EMB)
 
     train_dataset = GraphQADataset(graph=movielens.test, llm_wrapper=llm_wrapper, max_tokens=25, edge_type='binary', random=False)
     train_dataloader = DataLoader(train_dataset, batch_size=2, shuffle=True)
