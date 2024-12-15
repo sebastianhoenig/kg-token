@@ -21,7 +21,8 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
 
     tokenizer = llm_wrapper.get_tokenizer()
 
-    total_yes_preds, total_no_preds = 0, 0
+    total_correct_yes_preds, total_correct_no_preds = 0, 0
+    total_wrong_yes_preds, total_wrong_no_preds = 0, 0
     total_yes_targets, total_no_targets = 0, 0
     total_correct, total_items = 0, 0
 
@@ -50,8 +51,10 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
 
             batch_res = get_batch_accuracy(batch_labels, logits, target_mask, tokenizer)
 
-            total_yes_preds += batch_res['num_yes_preds']
-            total_no_preds += batch_res['num_no_preds']
+            total_correct_yes_preds += batch_res['num_correct_yes_preds']
+            total_correct_no_preds += batch_res['num_correct_no_preds']
+            total_wrong_yes_preds += batch_res['num_wrong_yes_preds']
+            total_wrong_no_preds += batch_res['num_wrong_no_preds']
             total_yes_targets += batch_res['num_yes_targets']
             total_no_targets += batch_res['num_no_targets']
             total_correct += batch_res['num_correct']
@@ -59,8 +62,10 @@ def evaluate(llm_wrapper, gnn, graph, dataloader: DataLoader, config: dict):
 
     aggregated_res = {
         "num_correct": total_correct,
-        "num_yes_preds": total_yes_preds,
-        "num_no_preds": total_no_preds,
+        "num_correct_yes_preds": total_correct_yes_preds,
+        "num_correct_no_preds": total_correct_no_preds,
+        "num_wrong_yes_preds": total_wrong_yes_preds,
+        "num_wrong_no_preds": total_wrong_no_preds,
         "num_yes_targets": total_yes_targets,
         "num_no_targets": total_no_targets,
         "num_items": total_items,

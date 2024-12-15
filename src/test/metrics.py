@@ -34,8 +34,10 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
     num_correct = 0
     num_ambiguous = 0
     num_indeterminate = 0
-    num_yes_preds = 0
-    num_no_preds = 0
+    num_correct_yes_preds = 0
+    num_wrong_yes_preds = 0
+    num_correct_no_preds = 0
+    num_wrong_no_preds = 0
     num_yes_targets = 0
     num_no_targets = 0
     for target, prediction in zip(targets, predictions):
@@ -51,33 +53,34 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
         else:
             normalized_prediction = normalized_prediction[0]
         normalized_prediction = normalized_prediction.lower()
-        binarized_prediction = 'yes' in normalized_prediction.lower()
-        if binarized_prediction and 'no' in normalized_prediction:
-            num_ambiguous += 1
-        elif not binarized_prediction and 'no' not in normalized_prediction:
-            num_indeterminate += 1
-        elif binarized_prediction == binarized_target and 'no' in normalized_prediction:
-            num_no_preds += 1
-            num_correct += 1
-        elif binarized_prediction != binarized_target and 'no' in normalized_prediction:
-            num_no_preds += 1
-        elif binarized_prediction == binarized_target and 'yes' in normalized_prediction:
-            num_yes_preds += 1
-            num_correct += 1
-        elif binarized_prediction == binarized_target and 'yes' in normalized_prediction:
-            num_yes_preds += 1
-        if binarized_target:
-            num_yes_targets += 1
-        else:
-            num_no_targets += 1
 
+        if 'yes' in normalized_prediction and 'no' in normalized_prediction:
+            num_ambiguous += 1
+            continue
+        if 'yes' not in normalized_prediction and 'no' not in normalized_prediction:
+            num_indeterminate += 1
+            continue
+        if 'yes' in normalized_prediction and binarized_target:
+            num_correct += 1
+            num_correct_yes_preds += 1
+            continue
+        if 'yes' in normalized_prediction and not binarized_target:
+            num_wrong_yes_preds += 1
+        if 'no' in normalized_prediction and not binarized_target:
+            num_correct += 1
+            num_correct_no_preds += 1
+            continue
+        if 'no' in normalized_prediction and binarized_target:
+            num_wrong_no_preds += 1
     return {
         'num_correct': num_correct,
         'num_ambiguous': num_ambiguous,
         'num_indeterminate': num_indeterminate,
         'num_items': len(targets),
-        'num_yes_preds': num_yes_preds,
-        'num_no_preds': num_no_preds,
+        'num_correct_yes_preds': num_correct_yes_preds,
+        'num_correct_no_preds': num_correct_no_preds,
+        'num_wrong_yes_preds': num_wrong_yes_preds,
+        'num_wrong_no_preds': num_wrong_no_preds,
         'num_yes_targets': num_yes_targets,
         'num_no_targets': num_no_targets,
     }
