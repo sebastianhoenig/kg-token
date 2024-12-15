@@ -76,10 +76,10 @@ class GraphQADataset(Dataset):
             target_mask = np.zeros_like(input_tokens)
             target_mask[len(query_tokens) + 1] = 1  # TRYING THIS OUT - REMOVING EOS TOKEN FROM TARGET MASK
             orig_len = len(query_tokens) + len(answer_tokens) + 1
-            input_tokens = np.pad(input_tokens, [[0, max_tokens - orig_len-1]], constant_values=PAD_TOKEN)
-            target_mask = np.pad(target_mask, [[0, max_tokens - orig_len-1]], constant_values=0)
+            #input_tokens = np.pad(input_tokens, [[0, max_tokens - orig_len-1]], constant_values=PAD_TOKEN)
+            #target_mask = np.pad(target_mask, [[0, max_tokens - orig_len-1]], constant_values=0)
             attention_mask = np.ones_like(input_tokens)
-            attention_mask[input_tokens == PAD_TOKEN] = 0
+            #attention_mask[input_tokens == PAD_TOKEN] = 0
             out.append((input_tokens, target_mask, attention_mask, user_id, movie_id))
 
         return out
