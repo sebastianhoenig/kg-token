@@ -54,7 +54,7 @@ class GraphTokenGPT(nn.Module):
             BOS_TOKEN = self.tokenizer.bos_token_id
             EOS_TOKEN = self.tokenizer.eos_token_id
             PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
-            max_tokens = 20
+            max_tokens = 30
             input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             target_mask = np.zeros_like(input_token)
             target_mask[len(query_tokens) + 1] = 1  # TRYING THIS OUT - REMOVING EOS TOKEN FROM TARGET MASK
@@ -138,7 +138,7 @@ class GraphTokenGPT(nn.Module):
             BOS_TOKEN = self.tokenizer.bos_token_id
             EOS_TOKEN = self.tokenizer.eos_token_id
             PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
-            max_tokens = 20
+            max_tokens = 30
             input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             orig_len = len(query_tokens) + len(answer_tokens) + 1
             input_token = np.pad(input_token, [[0, max_tokens - orig_len - 1]], constant_values=PAD_TOKEN)
@@ -182,11 +182,9 @@ class GraphTokenGPT(nn.Module):
         batch_attention_masks = torch.stack(batch_attention_masks)
 
         with self.maybe_autocast():
-            outputs = self.model.generate(
+            outputs = self.model(
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
-                max_new_tokens=2,
-                use_cache=True
             )
 
         pred = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
