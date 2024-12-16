@@ -34,7 +34,7 @@ class GATConvTokenEncoder(nn.Module):
 
     def forward(self, x, edge_index):
         x = self.conv1(x, edge_index).relu()
-        x = self.conv2(x, edge_index).relu()
+        x = self.conv2(x, edge_index)#.relu()
         #x = self.bn1(x)
         #x = self.bn2(x)
         x = self.projection(x)
