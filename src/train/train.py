@@ -16,37 +16,45 @@ from src.utils.logging import log_to_wandb
 from src.utils.seed import apply_seed
 from src.models.gnn_llm import GraphTokenGPT
 from src.test.metrics import get_binary_batch_metrics
-def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
-          optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler, config: Any):
-    # Set GNN parameters to require gradients
+from src.models.gnn import SAGEConvTokenEncoder, GATConvTokenEncoder, GATv2ConvTokenEncoder, TransformerConvTokenEncoder, GINConvTokenEncoder
+from torch_geometric.nn import to_hetero
+from src.graph.Movielens100k import MovieLens
+from src.data.Dataset import GraphQADataset
+
+
+def train(config: Any):
     apply_seed(0)
-    for param in gnn.parameters():
-        param.requires_grad = True
+
+    movielens = MovieLens(path=config.dataset_path, device=config.device)
+    movielens.create_graph()
 
     # Freeze all LLM parameters
-    llm = llm_wrapper.get_llm()
-    tokenizer = llm_wrapper.get_tokenizer()
-    for param in llm.parameters():
-        param.requires_grad = False  # Freezes the LLM parameters
-
-    device = config['device']
+    device = config.device
+    gnn = GATConvTokenEncoder(config.gnn_hidden_dim, config.llm_embedding_dim)
+    gnn = to_hetero(gnn, movielens.train.metadata(), aggr='sum')
     gnn.to(device)
-    llm.to(device)
+
+    graph = movielens.train
     graph = graph.to(device)
 
-    USER_EMB = llm_wrapper.USER_EMB
-    MOVIE_EMB = llm_wrapper.MOVIE_EMB
+    train_dataset = GraphQADataset(graph=movielens.train, config=config)
+    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+
+    test_dataset = GraphQADataset(graph=movielens.test, config=config)
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size)
+
+    optimizer = torch.optim.AdamW(gnn.parameters(), lr=config.lr)
 
     example_ct = 0  # number of examples seen
 
-    gnn_llm = GraphTokenGPT(config, llm, tokenizer, gnn)
-    for epoch in tqdm(range(config['num_epochs']), desc="Epoch Progress"):
+    gnn_llm = GraphTokenGPT(config, gnn)
+    for epoch in tqdm(range(config.num_epochs), desc="Epoch Progress"):
 
         total_loss = 0
 
-        for batch in tqdm(dataloader, desc="Batch Progress", leave=False):
+        for batch in tqdm(train_loader, desc="Batch Progress", leave=False):
 
-            batch_size = len(batch[0])
+            batch_size = len(batch['question'])
 
             logits, loss, batch_labels, target_mask = gnn_llm(batch, graph)
 
@@ -54,7 +62,7 @@ def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataL
             loss.backward()
             optimizer.step()
 
-            res = get_batch_accuracy(batch_labels, logits, target_mask, tokenizer)
+            res = get_batch_accuracy(batch_labels, logits, target_mask, gnn_llm.tokenizer)
 
             total_loss += loss.detach().item()
             #scheduler.step(loss.item())
@@ -62,7 +70,7 @@ def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataL
             example_ct += batch_size
             log_to_wandb(res, epoch, example_ct, loss, optimizer)
 
-        avg_loss = total_loss / len(dataloader)
+        avg_loss = total_loss / len(train_loader)
         print(f"Epoch {epoch + 1}/{config['num_epochs']}, Loss: {avg_loss}")
 
 

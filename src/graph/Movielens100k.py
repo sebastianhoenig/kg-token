@@ -12,13 +12,12 @@ class MovieLens:
         path (str): The path to the unzipped MovieLens 100k dataset from
         https://files.grouplens.org/datasets/movielens/ml-100k.zip
     """
-    def __init__(self, path: str, device: str, edge_type: str):
+    def __init__(self, path: str, device: str):
         self.path = path
         self.device = device
         self.genres = ['unknown', 'Action', 'Adventure', 'Animation', 'Childrens', 'Comedy', 'Crime',
                        'Documentary', 'Drama', 'Fantasy', 'Film-Noir', 'Horror', 'Musical', 'Mystery',
                        'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western']
-        self.edge_type = edge_type  # Is supposed to be either "binary" or "rating"
         self.train = None
         self.test = None
 
@@ -50,14 +49,7 @@ class MovieLens:
     def _encode_ratings(self, ratings: pd.DataFrame) -> tuple[np.array, np.array]:
         src = ratings['user_id'].values
         dst = ratings['movie_id'].values
-
-        if self.edge_type == 'binary':
-            labels = (ratings['rating'] > 3).astype(float).values  # 1 for like, 0 for dislike
-        elif self.edge_type == 'rating':
-            labels = ratings['rating'].values.astype(float)  # Use raw rating values as attributes
-        else:
-            raise ValueError(f"Unknown relationship type: {self.edge_type}")
-
+        labels = (ratings['rating'] > 3).astype(float).values  # 1 for like, 0 for dislike
         return np.array([src, dst]), labels
 
     def create_graph(self):

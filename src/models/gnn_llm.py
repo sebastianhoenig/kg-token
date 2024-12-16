@@ -4,28 +4,29 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch import nn
 import torch.nn.functional as F
 from torch_geometric.nn import to_hetero
-
+import numpy as np
 
 IGNORE_INDEX = -100
 
+
 class GraphTokenGPT(nn.Module):
     # Adapted from https://github.com/franciscoliu/graphprompter/tree/main
-    def __init__(self, config, llm, tokenizer, gnn):
+    def __init__(self, args, gnn):
         super().__init__()
-        self.tokenizer = tokenizer#AutoTokenizer.from_pretrained(args.llm_model_path)
-        model = llm#AutoModelForCausalLM.from_pretrained(args.llm_model_path)
-        self.device = config['device']
+        self.tokenizer = AutoTokenizer.from_pretrained(args.llm_model_path)
+        model = AutoModelForCausalLM.from_pretrained(args.llm_model_path)
+        self.device = args.device
         self.gnn = gnn
-        #for name, param in model.named_parameters():
-        #    param.requires_grad = False
+        for name, param in model.named_parameters():
+            param.requires_grad = False
 
         self.model = model
 
-        special_tokens_dict = {'additional_special_tokens': [config['USER_EMB'], config['MOVIE_EMB']]}
+        special_tokens_dict = {'additional_special_tokens': [args.USER_EMB, args.MOVIE_EMB]}
         self.tokenizer.add_special_tokens(special_tokens_dict)
         self.model.resize_token_embeddings(len(self.tokenizer))
 
-        self.config = config
+        self.args = args
 
         self.model.to(self.device)
         self.embedding_layer = self.model.get_input_embeddings()
@@ -41,10 +42,45 @@ class GraphTokenGPT(nn.Module):
             return contextlib.nullcontext()
 
     def forward(self, batch, graph):
-        input_tokens, target_mask, attention_masks, user_ids, movie_ids = batch
+
+        attention_masks = []
+        user_ids = []
+        movie_ids = []
+        target_masks = []
+        input_tokens = []
+
+        for question, answer, user_id, movie_id in zip(batch["question"], batch["answer"], batch["user_id"], batch["movie_id"]):
+            query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
+            answer_tokens = self.tokenizer(answer, add_special_tokens=False)["input_ids"]
+            BOS_TOKEN = self.tokenizer.bos_token_id  # TODO CHANGE WHEN NO LONGER GPT2
+            EOS_TOKEN = self.tokenizer.eos_token_id
+            PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
+            max_tokens = 20
+            input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
+            target_mask = np.zeros_like(input_token)
+            target_mask[len(query_tokens) + 1] = 1  # TRYING THIS OUT - REMOVING EOS TOKEN FROM TARGET MASK
+            orig_len = len(query_tokens) + len(answer_tokens) + 1
+            input_token = np.pad(input_token, [[0, max_tokens - orig_len-1]], constant_values=PAD_TOKEN)
+            target_mask = np.pad(target_mask, [[0, max_tokens - orig_len-1]], constant_values=0)
+            attention_mask = np.ones_like(input_token)
+            attention_mask[input_token == PAD_TOKEN] = 0
+
+            attention_masks.append(torch.tensor(attention_mask))
+            user_ids.append(user_id)
+            movie_ids.append(movie_id)
+            target_masks.append(torch.tensor(target_mask))
+            input_tokens.append(torch.tensor(input_token))
+
+        attention_masks = torch.stack(attention_masks)
+        user_ids = torch.stack(user_ids)
+        movie_ids = torch.stack(movie_ids)
+        target_masks = torch.stack(target_masks)
+        input_tokens = torch.stack(input_tokens)
+
+        #input_tokens, target_mask, attention_masks, user_ids, movie_ids = batch
 
         input_tokens = input_tokens.to(self.device)
-        target_mask = target_mask.to(self.device)
+        target_masks = target_masks.to(self.device)
         attention_masks = attention_masks.to(self.device)
         user_ids = user_ids.to(self.device)
         movie_ids = movie_ids.to(self.device)
@@ -59,8 +95,8 @@ class GraphTokenGPT(nn.Module):
             movie_embedding = graph_embeds['movie'][movie_id].to(self.device)
             user_embedding = graph_embeds['user'][user_id].to(self.device)
 
-            user_token_id = self.tokenizer.convert_tokens_to_ids(self.config['USER_EMB'])
-            movie_token_id = self.tokenizer.convert_tokens_to_ids(self.config['MOVIE_EMB'])
+            user_token_id = self.tokenizer.convert_tokens_to_ids(self.args.USER_EMB)
+            movie_token_id = self.tokenizer.convert_tokens_to_ids(self.args.MOVIE_EMB)
 
             # Create a modified embedding matrix
             modified_embs = self.embedding_layer.weight.clone()
@@ -89,10 +125,10 @@ class GraphTokenGPT(nn.Module):
         logits = logits[:, :-1, :].contiguous()
 
         batch_labels = batch_labels[:, 1:]
-        target_mask = target_mask[:, 1:]
+        target_masks = target_masks[:, 1:]
 
         # Compute the loss using PyTorch's CrossEntropyLoss
-        batch_labels[target_mask == 0] = -100
+        batch_labels[target_masks == 0] = -100
         loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
         loss = loss_fn(logits.flatten(0, 1), batch_labels.flatten())
-        return logits, loss, batch_labels, target_mask
+        return logits, loss, batch_labels, target_masks
