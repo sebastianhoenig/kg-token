@@ -1,5 +1,5 @@
 from typing import Any
-
+import wandb
 from torch import nn
 from torch.utils.data import DataLoader
 import torch
@@ -24,6 +24,8 @@ from src.data.Dataset import GraphQADataset
 
 def train(config: Any):
     apply_seed(0)
+
+    wandb.init(project="kg-token", name=config.name, config=config)
 
     movielens = MovieLens(path=config.dataset_path, device=config.device)
     movielens.create_graph()
