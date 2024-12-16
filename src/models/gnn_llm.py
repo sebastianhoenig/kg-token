@@ -27,8 +27,12 @@ class GraphTokenGPT(nn.Module):
 
         self.args = args
 
-        self.model.to(self.device)
-        self.embedding_layer = self.model.get_input_embeddings()
+        if "gpt" in args.llm_model_path:
+            self.model.to(self.device)
+            self.embedding_layer = self.model.get_input_embeddings()
+        else:
+            self.embedding_layer = self.model.model.get_input_embeddings()
+
 
     def maybe_autocast(self, dtype=torch.float16):
         # If on CPU, don't use autocast
@@ -137,7 +141,7 @@ class GraphTokenGPT(nn.Module):
             answer_tokens = self.tokenizer(answer, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
             EOS_TOKEN = self.tokenizer.eos_token_id
-            PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
+            PAD_TOKEN = self.tokenizer.pad_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
             max_tokens = 30
             input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             orig_len = len(query_tokens) + len(answer_tokens) + 1
