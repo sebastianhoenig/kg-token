@@ -4,7 +4,7 @@
 This module contains definitions of metric_fns to be used for scoring
 graph tasks from nlgraph and graphqa.
 """
-
+import torch
 from typing import Mapping, Sequence
 
 
@@ -87,3 +87,16 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
         'num_yes_targets': num_yes_targets,
         'num_no_targets': num_no_targets,
     }
+
+
+def get_binary_batch_metrics(gt_answers, logits, tokenizer):
+    predictions = torch.argmax(logits, dim=-1)
+
+    target_mask = torch.zeros_like(predictions)
+    target_mask[:, :, -2] = 1  # ONLY THE YES/NO TOKEN
+
+    predictions = predictions[target_mask == 1]
+    predictions = tokenizer.convert_ids_to_tokens(predictions)
+
+    res = yes_no_accuracy(gt_answers, predictions)
+    return res

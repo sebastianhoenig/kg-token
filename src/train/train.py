@@ -14,8 +14,8 @@ from src.models.llm import LLM
 from src.train.utils import prepare_inputs, get_batch_accuracy
 from src.utils.logging import log_to_wandb
 from src.utils.seed import apply_seed
-
-
+from src.models.gnn_llm import GraphTokenGPT
+from src.test.metrics import get_binary_batch_metrics
 def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
           optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler, config: Any):
     # Set GNN parameters to require gradients
@@ -39,6 +39,7 @@ def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataL
 
     example_ct = 0  # number of examples seen
 
+    gnn_llm = GraphTokenGPT(config, llm, tokenizer, gnn)
     for epoch in tqdm(range(config['num_epochs']), desc="Epoch Progress"):
 
         total_loss = 0
@@ -47,31 +48,7 @@ def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataL
 
             batch_size = len(batch[0])
 
-            input_tokens, target_mask, attention_masks, user_ids, movie_ids = batch
-
-            batch_attention_masks, batch_embeddings, batch_labels, target_mask = prepare_inputs(MOVIE_EMB, USER_EMB,
-                                                                                                attention_masks, device,
-                                                                                                gnn, graph,
-                                                                                                input_tokens, llm,
-                                                                                                movie_ids, target_mask,
-                                                                                                tokenizer, user_ids)
-            # Forward pass through the LLM
-            outputs = llm(
-                inputs_embeds=batch_embeddings,  # Use custom embeddings
-                attention_mask=batch_attention_masks,
-                labels=batch_labels
-            )
-
-            logits = outputs.logits
-            logits = logits[:, :-1, :].contiguous()
-
-            batch_labels = batch_labels[:, 1:]
-            target_mask = target_mask[:, 1:]
-
-            # Compute the loss using PyTorch's CrossEntropyLoss
-            batch_labels[target_mask == 0] = -100
-            loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
-            loss = loss_fn(logits.flatten(0, 1), batch_labels.flatten())
+            logits, loss, batch_labels, target_mask = gnn_llm(batch, graph)
 
             optimizer.zero_grad()
             loss.backward()

@@ -34,7 +34,9 @@ if __name__ == '__main__':
         model_save_path='./model',
         optimizer='adam',
         device='cuda' if torch.cuda.is_available() else 'cpu',
-        num_examples_per_epoch=-1
+        num_examples_per_epoch=-1,
+        USER_EMB="<USER>",
+        MOVIE_EMB="<MOVIE>",
     )
 
     optimizer = torch.optim.Adam(gnn.parameters(), lr=config['learning_rate'])
