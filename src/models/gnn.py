@@ -2,6 +2,7 @@ import torch.nn as nn
 from torch_geometric.nn import SAGEConv, GATConv, GATv2Conv, TransformerConv, GINConv
 import torch.nn.functional as F
 
+
 class SAGEConvTokenEncoder(nn.Module):
     def __init__(self, hidden_channels, out_channels):
         super().__init__()
@@ -34,7 +35,7 @@ class GATConvTokenEncoder(nn.Module):
 
     def forward(self, x, edge_index):
         x = self.conv1(x, edge_index).relu()
-        x = self.conv2(x, edge_index)#.relu()
+        x = self.conv2(x, edge_index).relu()
         #x = self.bn1(x)
         #x = self.bn2(x)
         x = self.projection(x)

@@ -61,15 +61,15 @@ def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataL
             )
 
             logits = outputs.logits
-            logits = logits[:, :-1, :].contiguous()
+            #logits = logits[:, :-1, :].contiguous()
 
-            batch_labels = batch_labels[:, 1:]
-            target_mask = target_mask[:, 1:]
+            #batch_labels = batch_labels[:, 1:]
+            #target_mask = target_mask[:, 1:]
 
             # Compute the loss using PyTorch's CrossEntropyLoss
-            batch_labels[target_mask == 0] = -100
-            loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
-            loss = loss_fn(logits.flatten(0, 1), batch_labels.flatten())
+            #batch_labels[target_mask == 0] = -100
+            #loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
+            loss = outputs.loss#loss_fn(logits.flatten(0, 1), batch_labels.flatten())
 
             optimizer.zero_grad()
             loss.backward()
