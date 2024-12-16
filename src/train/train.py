@@ -19,7 +19,7 @@ from src.utils.seed import apply_seed
 def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
           optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler, config: Any):
     # Set GNN parameters to require gradients
-    apply_seed(42)
+    apply_seed(0)
     for param in gnn.parameters():
         param.requires_grad = True
 
