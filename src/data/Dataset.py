@@ -70,7 +70,7 @@ class GraphQADataset(Dataset):
             answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = tokenizer.bos_token_id  # TODO CHANGE WHEN NO LONGER GPT2
             EOS_TOKEN = tokenizer.eos_token_id
-            PAD_TOKEN = tokenizer.pad_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
+            PAD_TOKEN = tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
             max_tokens = 20
             input_tokens = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             target_mask = np.zeros_like(input_tokens)
