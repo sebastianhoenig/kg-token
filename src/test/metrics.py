@@ -29,6 +29,7 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
     Raises:
       ValueError: If a target string contains 'yes' and 'no'
     """
+    print(predictions)
     num_correct = 0
     num_ambiguous = 0
     num_indeterminate = 0
