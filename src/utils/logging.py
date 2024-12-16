@@ -1,7 +1,7 @@
 import wandb
 
 
-def log_to_wandb(res, epoch, example_ct, loss, optimizer):
+def log_train_to_wandb(res, epoch, example_ct, loss, optimizer):
     correct_yes_preds = res['num_correct_yes_preds']
     correct_no_preds = res['num_correct_no_preds']
     wrong_yes_preds = res['num_wrong_yes_preds']
@@ -22,7 +22,7 @@ def log_to_wandb(res, epoch, example_ct, loss, optimizer):
     wandb.log({"epoch": epoch, "yes_targets": yes_targets, "no_targets": no_targets}, step=example_ct)
 
 
-def log_evaluation_to_wandb(res):
+def log_test_to_wandb(res):
     correct_yes_preds = res['num_correct_yes_preds']
     correct_no_preds = res['num_correct_no_preds']
     wrong_yes_preds = res['num_wrong_yes_preds']

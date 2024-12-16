@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from src.test.metrics import yes_no_accuracy
+from src.utils.metrics import yes_no_accuracy
 
 
 def prepare_inputs(MOVIE_EMB, USER_EMB, attention_masks, device, gnn, graph, input_tokens, llm, movie_ids, target_mask,

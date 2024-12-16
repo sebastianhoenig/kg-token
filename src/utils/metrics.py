@@ -100,3 +100,13 @@ def get_binary_batch_metrics(gt_answers, logits, tokenizer):
 
     res = yes_no_accuracy(gt_answers, predictions)
     return res
+
+
+def get_batch_accuracy(batch_labels, logits, target_mask, tokenizer):
+    predictions = torch.argmax(logits, dim=-1)
+    predictions = predictions[target_mask == 1]
+    labels = batch_labels[target_mask == 1]
+    predicted_tokens = tokenizer.convert_ids_to_tokens(predictions)
+    target_tokens = tokenizer.convert_ids_to_tokens(labels)
+    res = yes_no_accuracy(target_tokens, predicted_tokens)
+    return res

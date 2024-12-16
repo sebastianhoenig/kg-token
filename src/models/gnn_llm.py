@@ -3,7 +3,6 @@ import contextlib
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch import nn
 import torch.nn.functional as F
-from torch_geometric.nn import to_hetero
 import numpy as np
 
 IGNORE_INDEX = -100
@@ -52,7 +51,7 @@ class GraphTokenGPT(nn.Module):
         for question, answer, user_id, movie_id in zip(batch["question"], batch["answer"], batch["user_id"], batch["movie_id"]):
             query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
             answer_tokens = self.tokenizer(answer, add_special_tokens=False)["input_ids"]
-            BOS_TOKEN = self.tokenizer.bos_token_id  # TODO CHANGE WHEN NO LONGER GPT2
+            BOS_TOKEN = self.tokenizer.bos_token_id
             EOS_TOKEN = self.tokenizer.eos_token_id
             PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
             max_tokens = 20
@@ -71,19 +70,11 @@ class GraphTokenGPT(nn.Module):
             target_masks.append(torch.tensor(target_mask))
             input_tokens.append(torch.tensor(input_token))
 
-        attention_masks = torch.stack(attention_masks)
-        user_ids = torch.stack(user_ids)
-        movie_ids = torch.stack(movie_ids)
-        target_masks = torch.stack(target_masks)
-        input_tokens = torch.stack(input_tokens)
-
-        #input_tokens, target_mask, attention_masks, user_ids, movie_ids = batch
-
-        input_tokens = input_tokens.to(self.device)
-        target_masks = target_masks.to(self.device)
-        attention_masks = attention_masks.to(self.device)
-        user_ids = user_ids.to(self.device)
-        movie_ids = movie_ids.to(self.device)
+        attention_masks = torch.stack(attention_masks).to(self.device)
+        user_ids = torch.stack(user_ids).to(self.device)
+        movie_ids = torch.stack(movie_ids).to(self.device)
+        target_masks = torch.stack(target_masks).to(self.device)
+        input_tokens = torch.stack(input_tokens).to(self.device)
 
         batch_embeddings = []
         batch_attention_masks = []
@@ -132,3 +123,78 @@ class GraphTokenGPT(nn.Module):
         loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
         loss = loss_fn(logits.flatten(0, 1), batch_labels.flatten())
         return logits, loss, batch_labels, target_masks
+
+    def inference(self, batch, graph):
+
+        attention_masks = []
+        user_ids = []
+        movie_ids = []
+        input_tokens = []
+
+        for question, answer, user_id, movie_id in zip(batch["question"], batch["answer"], batch["user_id"],
+                                                       batch["movie_id"]):
+            query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
+            answer_tokens = self.tokenizer(answer, add_special_tokens=False)["input_ids"]
+            BOS_TOKEN = self.tokenizer.bos_token_id
+            EOS_TOKEN = self.tokenizer.eos_token_id
+            PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
+            max_tokens = 20
+            input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
+            orig_len = len(query_tokens) + len(answer_tokens) + 1
+            input_token = np.pad(input_token, [[0, max_tokens - orig_len - 1]], constant_values=PAD_TOKEN)
+            attention_mask = np.ones_like(input_token)
+            attention_mask[input_token == PAD_TOKEN] = 0
+
+            attention_masks.append(torch.tensor(attention_mask))
+            user_ids.append(user_id)
+            movie_ids.append(movie_id)
+            input_tokens.append(torch.tensor(input_token))
+
+        attention_masks = torch.stack(attention_masks).to(self.device)
+        user_ids = torch.stack(user_ids).to(self.device)
+        movie_ids = torch.stack(movie_ids).to(self.device)
+        input_tokens = torch.stack(input_tokens).to(self.device)
+
+        batch_embeddings = []
+        batch_attention_masks = []
+
+        graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
+
+        for i, (user_id, movie_id) in enumerate(zip(user_ids, movie_ids)):
+            movie_embedding = graph_embeds['movie'][movie_id].to(self.device)
+            user_embedding = graph_embeds['user'][user_id].to(self.device)
+
+            user_token_id = self.tokenizer.convert_tokens_to_ids(self.args.USER_EMB)
+            movie_token_id = self.tokenizer.convert_tokens_to_ids(self.args.MOVIE_EMB)
+
+            # Create a modified embedding matrix
+            modified_embs = self.embedding_layer.weight.clone()
+            modified_embs[user_token_id] = user_embedding
+            modified_embs[movie_token_id] = movie_embedding
+
+            # Embed input tokens using the modified embeddings
+            input_embeddings = F.embedding(input_tokens[i], modified_embs)
+
+            batch_embeddings.append(input_embeddings)
+            batch_attention_masks.append(attention_masks[i])
+
+        batch_embeddings = torch.stack(batch_embeddings)
+        batch_attention_masks = torch.stack(batch_attention_masks)
+
+        with self.maybe_autocast():
+            outputs = self.model.generate(
+                inputs_embeds=batch_embeddings,
+                attention_mask=batch_attention_masks,
+                max_new_tokens=2,
+                use_cache=True
+            )
+
+        pred = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+
+        return {
+            'questions': batch["question"],
+            'answers': batch["answer"],
+            'predictions': pred,
+            'users': user_ids,
+            'movies': movie_ids
+        }
