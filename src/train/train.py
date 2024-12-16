@@ -13,11 +13,12 @@ from matplotlib.lines import Line2D
 from src.models.llm import LLM
 from src.train.utils import prepare_inputs, get_batch_accuracy
 from src.utils.logging import log_to_wandb
-
+from src.utils.seed import apply_seed
 
 def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataLoader,
           optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler, config: Any):
     # Set GNN parameters to require gradients
+    apply_seed(42)
     for param in gnn.parameters():
         param.requires_grad = True
 
@@ -61,13 +62,13 @@ def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataL
             )
 
             logits = outputs.logits
-            #logits = logits[:, :-1, :].contiguous()
+            logits = logits[:, :-1, :].contiguous()
 
-            #batch_labels = batch_labels[:, 1:]
-            #target_mask = target_mask[:, 1:]
+            batch_labels = batch_labels[:, 1:]
+            target_mask = target_mask[:, 1:]
 
             # Compute the loss using PyTorch's CrossEntropyLoss
-            #batch_labels[target_mask == 0] = -100
+            batch_labels[target_mask == 0] = -100
             #loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
             loss = outputs.loss#loss_fn(logits.flatten(0, 1), batch_labels.flatten())
 
