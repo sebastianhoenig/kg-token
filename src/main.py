@@ -10,7 +10,7 @@ from matplotlib.lines import Line2D
 from src.utils.logging import log_train_to_wandb
 from src.utils.seed import apply_seed
 from src.models.gnn_llm import GraphTokenGPT
-from src.utils.metrics import get_batch_accuracy
+from src.utils.metrics import get_batch_accuracy, yes_no_accuracy
 from src.models.gnn import GATConvTokenEncoder
 from torch_geometric.nn import to_hetero
 from src.graph.Movielens100k import MovieLens
@@ -93,9 +93,12 @@ def evaluate(gnn_llm, graph, dataloader: DataLoader, config: Any):
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Evaluating"):
 
-            logits, loss, batch_labels, target_mask = gnn_llm.inference(batch, graph)
-
-            batch_res = get_batch_accuracy(batch_labels, logits, target_mask, tokenizer)
+            test_results = gnn_llm.inference(batch, graph)
+            print("Predictions")
+            print(test_results["predictions"])
+            print("Answers")
+            print(test_results["answers"])
+            batch_res = yes_no_accuracy(test_results["answers"], test_results["predictions"])
 
             total_correct_yes_preds += batch_res['num_correct_yes_preds']
             total_correct_no_preds += batch_res['num_correct_no_preds']
