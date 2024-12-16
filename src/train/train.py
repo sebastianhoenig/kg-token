@@ -80,7 +80,7 @@ def train(llm_wrapper: LLM, gnn: nn.Module, graph: HeteroData, dataloader: DataL
             res = get_batch_accuracy(batch_labels, logits, target_mask, tokenizer)
 
             total_loss += loss.detach().item()
-            scheduler.step(loss.item())
+            #scheduler.step(loss.item())
 
             example_ct += batch_size
             log_to_wandb(res, epoch, example_ct, loss, optimizer)
