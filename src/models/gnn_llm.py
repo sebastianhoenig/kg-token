@@ -182,9 +182,11 @@ class GraphTokenGPT(nn.Module):
         batch_attention_masks = torch.stack(batch_attention_masks)
 
         with self.maybe_autocast():
-            outputs = self.model(
+            outputs = self.model.generate(
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
+                max_new_tokens=2,
+                use_cache=True
             )
 
         pred = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
