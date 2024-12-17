@@ -16,6 +16,7 @@ from torch_geometric.nn import to_hetero
 from src.graph.Movielens100k import MovieLens
 from src.data.Dataset import GraphQADataset
 from src.utils.logging import log_test_to_wandb
+from src.utils.checkpoints import save_model
 
 
 def train(config: Any):
@@ -72,7 +73,7 @@ def train(config: Any):
         print(f"Epoch {epoch + 1}/{config.num_epochs}, Loss: {avg_loss}")
 
     print("Evaluating on Test set")
-    evaluate(gnn_llm, movielens.test, test_loader, config)
+    save_model(gnn_llm, config)
 
 
 def evaluate(gnn_llm, graph, dataloader: DataLoader, config: Any):
@@ -82,8 +83,6 @@ def evaluate(gnn_llm, graph, dataloader: DataLoader, config: Any):
 
     # Set model to evaluation mode
     gnn_llm.eval()
-
-    tokenizer = gnn_llm.tokenizer
 
     total_correct_yes_preds, total_correct_no_preds = 0, 0
     total_wrong_yes_preds, total_wrong_no_preds = 0, 0
