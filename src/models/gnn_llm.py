@@ -138,13 +138,11 @@ class GraphTokenGPT(nn.Module):
         for question, answer, user_id, movie_id in zip(batch["question"], batch["answer"], batch["user_id"],
                                                        batch["movie_id"]):
             query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
-            answer_tokens = self.tokenizer(answer, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
-            EOS_TOKEN = self.tokenizer.eos_token_id
             PAD_TOKEN = self.tokenizer.pad_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
             max_tokens = 30
-            input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
-            orig_len = len(query_tokens) + len(answer_tokens) + 1
+            input_token = np.array([BOS_TOKEN] + query_tokens)
+            orig_len = len(query_tokens)
             input_token = np.pad(input_token, [[0, max_tokens - orig_len - 1]], constant_values=PAD_TOKEN)
             attention_mask = np.ones_like(input_token)
             attention_mask[input_token == PAD_TOKEN] = 0
