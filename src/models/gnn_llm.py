@@ -139,7 +139,7 @@ class GraphTokenGPT(nn.Module):
                                                        batch["movie_id"]):
             query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
-            PAD_TOKEN = self.tokenizer.pad_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
+            PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
             max_tokens = 30
             input_token = np.array([BOS_TOKEN] + query_tokens)
             orig_len = len(query_tokens)
