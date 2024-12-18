@@ -58,7 +58,7 @@ class GraphTokenGPT(nn.Module):
             BOS_TOKEN = self.tokenizer.bos_token_id
             EOS_TOKEN = self.tokenizer.eos_token_id
             PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
-            max_tokens = 30
+            max_tokens = 100
             input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             target_mask = np.zeros_like(input_token)
             target_mask[len(query_tokens) + 1] = 1  # TRYING THIS OUT - REMOVING EOS TOKEN FROM TARGET MASK
