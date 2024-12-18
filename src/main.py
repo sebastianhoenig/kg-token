@@ -170,6 +170,8 @@ def evaluate(config: Any):
         "num_items": total_items,
     }
 
+    print(aggregated_res)
+
     log_test_to_wandb(aggregated_res)
 
 
