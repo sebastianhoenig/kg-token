@@ -187,7 +187,7 @@ class GraphTokenGPT(nn.Module):
             outputs = self.model.generate(
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
-                max_new_tokens=1,
+                max_new_tokens=3,
                 use_cache=True
             )
 
