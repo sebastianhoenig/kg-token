@@ -50,12 +50,12 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
             num_yes_targets += 1
         else:
             num_no_targets += 1
-        normalized_prediction = prediction.splitlines()
+        normalized_prediction = prediction.lower()
         if not normalized_prediction:
             normalized_prediction = ''
         else:
             normalized_prediction = normalized_prediction[0]
-        normalized_prediction = normalized_prediction.lower()
+        #normalized_prediction = normalized_prediction.lower()
 
         if 'yes' in normalized_prediction and 'no' in normalized_prediction:
             num_ambiguous += 1
