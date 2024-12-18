@@ -22,5 +22,8 @@ def load_model(model, args):
     output_dir = args.output_dir
     name = args.name
 
-    model.load_state_dict(torch.load(output_dir + "/" + name + ".pt"), strict=False)
+    if args.device != "cuda":
+        model.load_state_dict(torch.load(output_dir + "/" + name + ".pt", map_location=torch.device('cpu')), strict=False)
+    else:
+        model.load_state_dict(torch.load(output_dir + "/" + name + ".pt"), strict=False)
     return model

@@ -167,3 +167,4 @@ cython_debug/
 /src/debug.py
 /weights/
 /src/output/
+/src/ckpts/

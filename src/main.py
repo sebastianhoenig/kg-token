@@ -16,7 +16,7 @@ from torch_geometric.nn import to_hetero
 from src.graph.Movielens100k import MovieLens
 from src.data.Dataset import GraphQADataset
 from src.utils.logging import log_test_to_wandb
-from src.utils.checkpoints import save_model
+from src.utils.checkpoints import save_model, load_model
 
 
 def train(config: Any):
@@ -38,9 +38,6 @@ def train(config: Any):
 
     train_dataset = GraphQADataset(graph=movielens.train, config=config)
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
-
-    test_dataset = GraphQADataset(graph=movielens.test, config=config)
-    test_loader = DataLoader(test_dataset, batch_size=config.batch_size)
 
     optimizer = torch.optim.AdamW(gnn.parameters(), lr=config.lr)
 
@@ -76,11 +73,24 @@ def train(config: Any):
     save_model(gnn_llm, config)
 
 
-def evaluate(gnn_llm, graph, dataloader: DataLoader, config: Any):
+def evaluate(config: Any):
+
+    movielens = MovieLens(path=config.dataset_path, device=config.device)
+    movielens.create_graph()
+
+    test_dataset = GraphQADataset(graph=movielens.test, config=config)
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size)
     device = config.device
 
+    gnn = GATConvTokenEncoder(config.gnn_hidden_dim, config.llm_embedding_dim)
+    gnn = to_hetero(gnn, movielens.train.metadata(), aggr='sum')
+    gnn.to(device)
+
+    graph = movielens.train
     graph = graph.to(device)
 
+    gnn_llm = GraphTokenGPT(config, gnn)
+    gnn_llm = load_model(gnn_llm, config)
     # Set model to evaluation mode
     gnn_llm.eval()
 
@@ -90,7 +100,7 @@ def evaluate(gnn_llm, graph, dataloader: DataLoader, config: Any):
     total_correct, total_items = 0, 0
 
     with torch.no_grad():
-        for batch in tqdm(dataloader, desc="Evaluating"):
+        for batch in tqdm(test_loader, desc="Evaluating"):
 
             test_results = gnn_llm.inference(batch, graph)
             print("Predictions")
