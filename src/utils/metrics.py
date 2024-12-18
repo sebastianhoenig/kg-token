@@ -53,8 +53,8 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
         normalized_prediction = prediction.lower()
         if not normalized_prediction:
             normalized_prediction = ''
-        else:
-            normalized_prediction = normalized_prediction[0]
+        #else:
+            #normalized_prediction = normalized_prediction[0]
         #normalized_prediction = normalized_prediction.lower()
 
         if 'yes' in normalized_prediction and 'no' in normalized_prediction:
