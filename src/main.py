@@ -11,10 +11,12 @@ from src.utils.logging import log_train_to_wandb
 from src.utils.seed import apply_seed
 from src.models.gnn_llm import GraphTokenGPT
 from src.models.gnn import GNNPipeline
-from src.utils.metrics import get_accuracy_gnnllm, yes_no_accuracy, get_accuracy_gnn
+from src.utils.metrics import get_accuracy_gnnllm, yes_no_accuracy, get_accuracy_gnn_binary_task, get_rmse_gnn_regression_task
 from src.models.gnn_encoders import GATConvTokenEncoder
 from torch_geometric.nn import to_hetero
-from src.graph.Movielens100k import MovieLens
+from src.graph.oldmv import MovieLens
+#from src.graph.Movielens100k import MovieLens
+#from src.graph.Movielens100k1 import MovieLens
 from src.data.Dataset import GraphQADataset
 from src.utils.logging import log_test_to_wandb
 from src.utils.checkpoints import save_model, load_model
@@ -23,7 +25,10 @@ from src.utils.checkpoints import save_model, load_model
 def train_gnn(config: Any):
     apply_seed(0)
 
-    movielens = MovieLens(path=config.dataset_path, device=config.device)
+    #movielens = MovieLens(config)
+    #movielens.create_graph()
+
+    movielens = MovieLens(config)
     movielens.create_graph()
 
     # Freeze all LLM parameters
@@ -41,21 +46,27 @@ def train_gnn(config: Any):
         total_loss = 0
 
         probs, loss, labels = gnn(graph)
-
+        print(get_rmse_gnn_regression_task(probs, labels)['rmse'])
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         total_loss += loss.detach().item()
 
-    train_acc = get_accuracy_gnn(probs, labels)['acc']
+    if config.rating_type == 'binary':
+        train_acc = get_accuracy_gnn_binary_task(probs, labels)['acc']
+    else:
+        train_acc = get_rmse_gnn_regression_task(probs, labels)['rmse']
     gnn.eval()
     test_graph = movielens.test
     test_graph = test_graph.to(device)
 
     probs, labels = gnn.inference(test_graph)
 
-    test_acc = get_accuracy_gnn(probs, labels)['acc']
+    if config.rating_type == 'binary':
+        test_acc = get_accuracy_gnn_binary_task(probs, labels)['acc']
+    else:
+        test_acc = get_rmse_gnn_regression_task(probs, labels)['rmse']
 
     return total_loss, train_acc, test_acc
 

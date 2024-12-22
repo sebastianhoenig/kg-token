@@ -1,79 +1,170 @@
 import pandas as pd
 import torch
-import numpy as np
-from src.graph.FeatureEncoder import GenresEncoder, TextEncoder
+from sentence_transformers import SentenceTransformer
 from torch_geometric.data import HeteroData
 from torch_geometric.transforms import ToUndirected
+from typing import Any, Dict, Optional
 
 
 class MovieLens:
-    """The MovieLens dataset with 100k ratings
-    Args:
-        path (str): The path to the unzipped MovieLens 100k dataset from
-        https://files.grouplens.org/datasets/movielens/ml-100k.zip
-    """
-    def __init__(self, path: str, device: str):
-        self.path = path
-        self.device = device
+    def __init__(self, args):
+        self.path = args.dataset_path
+        self.device = args.device
+        self.args = args
         self.genres = ['unknown', 'Action', 'Adventure', 'Animation', 'Childrens', 'Comedy', 'Crime',
                        'Documentary', 'Drama', 'Fantasy', 'Film-Noir', 'Horror', 'Musical', 'Mystery',
                        'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western']
         self.train = None
         self.test = None
 
-    def _load_data(self):
-        movies = pd.read_csv(self.path + 'u.item', sep='|', encoding='latin-1', header=None)
-        movies.columns = ['movie_id', 'movie_title', 'release_date', 'video_release_date', 'IMDb_URL'] + self.genres
+    @staticmethod
+    def read_csv(path: str, header: Optional[Any] = None, sep: str = "|") -> pd.DataFrame:
+        return pd.read_csv(path, header=header, sep=sep, encoding='latin-1')
 
-        ratings_train = pd.read_csv(self.path + 'ua.base', sep='\t', header=None)
-        ratings_train.columns = ['user_id', 'movie_id', 'rating', 'timestamp']
+    @staticmethod
+    def load_node_csv(df: pd.DataFrame, encoders: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        node_mapping = {index: i for i, index in enumerate(df.index.unique())}
+        node_embedding = None
+        if encoders is not None:
+            node_name_tmp = []
+            for col, encoder in encoders.items():
+                if col in df.columns:
+                    node_name_tmp.append(encoder(df[col]))
+                else:
+                    node_name_tmp.append(encoder(col))
+            node_embedding = torch.cat(node_name_tmp, dim=-1)
+        return {"node_embedding": node_embedding, "node_mapping": node_mapping}
 
-        ratings_test = pd.read_csv(self.path + 'ua.test', sep='\t', header=None)
-        ratings_test.columns = ['user_id', 'movie_id', 'rating', 'timestamp']
+    @staticmethod
+    def load_edge_csv(df: pd.DataFrame, **kwargs: Any) -> Dict[str, Any]:
+        df.reset_index(inplace=True)
+        src = [kwargs["src_mapping"][index] for index in df[kwargs["src_index_col"]]]
+        dst = [kwargs["dst_mapping"][index] for index in df[kwargs["dst_index_col"]]]
+        edge_index = torch.tensor([src, dst])
 
-        users = pd.read_csv(self.path + 'u.user', sep='|', header=None)
-        users.columns = ['user_id', 'age', 'gender', 'occupation', 'zip_code']
+        edge_label = None
+        if kwargs["encoders"] is not None:
+            edge_attrs = [encoder(df[col]) for col, encoder in kwargs["encoders"].items()]
+            edge_label = torch.cat(edge_attrs, dim=-1)
 
-        movie_id_mapping = {movie_id: idx for idx, movie_id in enumerate(movies['movie_id'])}
-        user_id_mapping = {user_id: idx for idx, user_id in enumerate(users['user_id'])}
-        movies['movie_id'] = movies['movie_id'].map(movie_id_mapping)
-        users['user_id'] = users['user_id'].map(user_id_mapping)
+        return {"edge_index": edge_index, "edge_label": edge_label}
 
-        ratings_train['movie_id'] = ratings_train['movie_id'].map(movie_id_mapping)
-        ratings_train['user_id'] = ratings_train['user_id'].map(user_id_mapping)
+    @staticmethod
+    def assign_node_property(
+            data: HeteroData, node_name: str, is_feature_available: bool, node_tensor: Dict[str, Any]
+    ) -> HeteroData:
+        if is_feature_available:
+            data[node_name].x = node_tensor[node_name]["node_embedding"]
+            return data
 
-        ratings_test['movie_id'] = ratings_test['movie_id'].map(movie_id_mapping)
-        ratings_test['user_id'] = ratings_test['user_id'].map(user_id_mapping)
-        return movies, ratings_train, ratings_test, users
+        data[node_name].num_nodes = len(node_tensor[node_name]["node_mapping"])
+        return data
 
-    def _encode_ratings(self, ratings: pd.DataFrame) -> tuple[np.array, np.array]:
-        src = ratings['user_id'].values
-        dst = ratings['movie_id'].values
-        labels = (ratings['rating'] > 3).astype(float).values  # 1 for like, 0 for dislike
-        return np.array([src, dst]), labels
+    @staticmethod
+    def assign_edge_property(
+            data: HeteroData, src_name: str, dst_name: str, relation: str, edge_properties: Dict[str, Any]
+    ) -> HeteroData:
+        data[(src_name, relation, dst_name)].edge_index = edge_properties["edge_index"]
+        data[(src_name, relation, dst_name)].edge_label = edge_properties["edge_label"]
+        return data
 
     def create_graph(self):
-        movies, ratings_train, ratings_test, users = self._load_data()
+        # Load movies and users
+        users = self.read_csv(self.path + 'u.user', sep='|', header=None)
+        users.columns = ['user_id', 'age', 'gender', 'occupation', 'zip_code']
 
-        movie_titles = TextEncoder()(movies, ['movie_title'])
-        movie_genres = GenresEncoder()(movies, self.genres)
-        user_ages = torch.Tensor(users['age'].values).to(self.device)  # Move to device
-        movie_features = torch.cat((movie_titles, movie_genres), dim=1).to(self.device)  # Move to device
-        index_train, attributes_train = self._encode_ratings(ratings_train)
-        index_test, attributes_test = self._encode_ratings(ratings_test)
+        movies = self.read_csv(path=self.path + 'u.item', header=None, sep='|')
+        movies.columns = ['movie_id', 'movie_title', 'release_date', 'video_release_date', 'IMDb_URL'] + self.genres
 
-        data = HeteroData()
-        data['movie'].x = movie_features
-        data['user'].x = user_ages.view(-1, 1)
-        data['user', 'likes', 'movie'].edge_index = torch.tensor(index_train, dtype=torch.long).to(self.device)  # Move to device
-        data['user', 'likes', 'movie'].edge_labels = torch.tensor(attributes_train, dtype=torch.float).to(self.device)
+        ratings_train = self.read_csv(path=self.path + 'ua.base', header=None, sep='\t')
+        ratings_train.columns = ['user_id', 'movie_id', 'rating', 'timestamp']
+
+        ratings_test = self.read_csv(path=self.path + 'ua.test', header=None, sep='\t')
+        ratings_test.columns = ['user_id', 'movie_id', 'rating', 'timestamp']
+
+        # Prepare nodes
+        src_node = dict()
+        dst_node = dict()
+
+        src_node["user"] = self.load_node_csv(df=users.set_index('user_id'))
+        dst_node["movie"] = self.load_node_csv(
+            df=movies.set_index('movie_id'),
+            encoders={
+                "movie_title": TokenEmbedding(device=self.device),
+                "genres": GenresColumn(movies[self.genres])
+            },
+        )
+
+        def prepare_edges(ratings: pd.DataFrame):
+            src = ratings['user_id'].values - 1
+            dst = ratings['movie_id'].values - 1
+            edge_index = torch.tensor([src, dst], dtype=torch.long)
+            edge_label = torch.tensor((ratings['rating'] > 3).astype(float).values, dtype=torch.float)
+            return {"edge_index": edge_index, "edge_label": edge_label}
+
+        edge_properties_train = prepare_edges(ratings_train)
+        edge_properties_test = prepare_edges(ratings_test)
+
+        # Create data object
+        data_train = HeteroData()
+        data_train = self.assign_node_property(
+            data=data_train, node_name="user", is_feature_available=False, node_tensor=src_node
+        )
+        data_train = self.assign_node_property(
+            data=data_train, node_name="movie", is_feature_available=True, node_tensor=dst_node
+        )
+        data_train = self.assign_edge_property(
+            data=data_train, src_name="user", dst_name="movie", relation="likes", edge_properties=edge_properties_train
+        )
+
+        data_train["user"].x = torch.eye(data_train["user"].num_nodes, device=self.device)
+
+        del data_train["user"].num_nodes
 
         data_test = HeteroData()
-        data_test['movie'].x = movie_features
-        data_test['user'].x = user_ages.view(-1, 1)
-        data_test['user', 'likes', 'movie'].edge_index = torch.tensor(index_test, dtype=torch.long).to(self.device)  # Move to device
-        data_test['user', 'likes', 'movie'].edge_labels = torch.tensor(attributes_test, dtype=torch.float).to(self.device)
+        data_test = self.assign_node_property(
+            data=data_test, node_name="user", is_feature_available=False, node_tensor=src_node
+        )
+        data_test = self.assign_node_property(
+            data=data_test, node_name="movie", is_feature_available=True, node_tensor=dst_node
+        )
+        data_test = self.assign_edge_property(
+            data=data_test, src_name="user", dst_name="movie", relation="likes", edge_properties=edge_properties_test
+        )
 
-        self.train = ToUndirected()(data).to(self.device)  # Convert to undirected and move to device
+        data_test["user"].x = torch.eye(data_test["user"].num_nodes, device=self.device)
+
+        del data_test["user"].num_nodes
+
+        # Convert to undirected and finalize
+        self.train = ToUndirected()(data_train).to(self.device)
         self.test = ToUndirected()(data_test).to(self.device)
+
+        del self.train["movie", "rev_likes", "user"].edge_label
+        del self.test["movie", "rev_likes", "user"].edge_label
+
+
+class GenresColumn:
+    def __init__(self, df: pd.DataFrame):
+        self.df = df
+
+    def __call__(self, col) -> torch.Tensor:
+        return torch.tensor(self.df.values, dtype=torch.float32)
+
+
+class TokenEmbedding:
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2", device: Any = None):
+        self.device = device
+        self.model = SentenceTransformer(model_name, device=device)
+
+    @torch.no_grad()
+    def __call__(self, df) -> torch.Tensor:
+        x = self.model.encode(
+            df.values,
+            show_progress_bar=True,
+            convert_to_tensor=True,
+            device=self.device,
+        )
+        return x.cpu()
+
 

@@ -99,7 +99,11 @@ def get_accuracy_gnnllm(batch_labels, logits, target_mask, tokenizer):
     return res
 
 
-def get_accuracy_gnn(probs, labels):
+def get_accuracy_gnn_binary_task(probs, labels):
+    """
+    Computes the accuracy for a binary classification task.
+    """
+
     preds = (probs > 0.5).long()
 
     num_items = labels.size(0)
@@ -118,7 +122,33 @@ def get_accuracy_gnn(probs, labels):
         'acc': num_correct/num_items,
         'num_correct_yes_preds': num_correct_yes_preds,
         'num_correct_no_preds': num_correct_no_preds,
-        'num_wrong_no_preds': num_wrong_no_preds,
         'num_yes_targets': num_yes_targets,
         'num_no_targets': num_no_targets,
     }
+
+
+import torch
+
+
+def get_rmse_gnn_regression_task(preds, labels):
+    """
+    Computes the RMSE for a regression task.
+    """
+    preds = preds.float()
+    labels = labels.float()
+
+    squared_errors = (preds - labels) ** 2
+
+    rmse = torch.sqrt(torch.mean(squared_errors)).item()
+
+    mean_pred = preds.mean().item()
+    mean_label = labels.mean().item()
+    num_samples = labels.size(0)
+
+    return {
+        'rmse': rmse,
+        'mean_pred': mean_pred,
+        'mean_label': mean_label,
+        'num_samples': num_samples,
+    }
+
