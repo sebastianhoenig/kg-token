@@ -14,9 +14,7 @@ from src.models.gnn import GNNPipeline
 from src.utils.metrics import get_accuracy_gnnllm, yes_no_accuracy, get_accuracy_gnn_binary_task, get_rmse_gnn_regression_task
 from src.models.gnn_encoders import GATConvTokenEncoder
 from torch_geometric.nn import to_hetero
-from src.graph.oldmv import MovieLens
 from src.graph.Movielens100k import MovieLens
-#from src.graph.Movielens100k1 import MovieLens
 from src.data.Dataset import GraphQADataset
 from src.utils.logging import log_test_to_wandb
 from src.utils.checkpoints import save_model, load_model
