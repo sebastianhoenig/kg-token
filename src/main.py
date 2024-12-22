@@ -73,7 +73,7 @@ def train_gnnllm(config: Any):
 
     wandb.init(project="kg-token", name=config.name, config=config)
 
-    movielens = MovieLens(path=config.dataset_path, device=config.device)
+    movielens = MovieLens(config)
     movielens.create_graph()
 
     # Freeze all LLM parameters
