@@ -16,7 +16,7 @@ class GraphQADataset(Dataset):
         qa_dict = {}
 
         user_movie_edges = self.graph["user", "likes", "movie"].edge_index
-        labels = self.graph["user", "likes", "movie"].edge_labels
+        labels = self.graph["user", "likes", "movie"].edge_label
 
         for ind, (user_idx, movie_idx) in enumerate(zip(*user_movie_edges)):
             qa_dict[ind] = {
