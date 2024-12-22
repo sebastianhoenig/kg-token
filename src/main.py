@@ -15,7 +15,7 @@ from src.utils.metrics import get_accuracy_gnnllm, yes_no_accuracy, get_accuracy
 from src.models.gnn_encoders import GATConvTokenEncoder
 from torch_geometric.nn import to_hetero
 from src.graph.oldmv import MovieLens
-#from src.graph.Movielens100k import MovieLens
+from src.graph.Movielens100k import MovieLens
 #from src.graph.Movielens100k1 import MovieLens
 from src.data.Dataset import GraphQADataset
 from src.utils.logging import log_test_to_wandb
@@ -46,7 +46,6 @@ def train_gnn(config: Any):
         total_loss = 0
 
         probs, loss, labels = gnn(graph)
-        print(get_rmse_gnn_regression_task(probs, labels)['rmse'])
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
