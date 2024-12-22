@@ -78,9 +78,6 @@ def train_gnnllm(config: Any):
 
     # Freeze all LLM parameters
     device = config.device
-    gnn = GATConvTokenEncoder(config.gnn_hidden_dim, config.llm_embedding_dim)
-    gnn = to_hetero(gnn, movielens.train.metadata(), aggr='sum')
-    gnn.to(device)
 
     graph = movielens.train
     graph = graph.to(device)
@@ -88,11 +85,16 @@ def train_gnnllm(config: Any):
     train_dataset = GraphQADataset(graph=movielens.train, config=config)
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
 
-    optimizer = torch.optim.AdamW(gnn.parameters(), lr=config.lr)
-
     example_ct = 0  # number of examples seen
 
-    gnn_llm = GraphTokenGPT(config, gnn)
+    gnn_llm = GraphTokenGPT(config, movielens.train.metadata())
+
+    params = [p for _, p in gnn_llm.named_parameters() if p.requires_grad]
+    optimizer = torch.optim.AdamW(
+        [{'params': params, 'lr': config.lr}, ],
+        betas=(0.9, 0.95)
+    )
+
     for epoch in tqdm(range(config.num_epochs), desc="Epoch Progress"):
 
         total_loss = 0

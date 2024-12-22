@@ -34,13 +34,13 @@ class GATConvTokenEncoder(nn.Module):
                  num_heads=1):
         super().__init__()
         self.convs = nn.ModuleList()
-        self.convs.append(GATConv((-1, -1), hidden_channels, add_self_loops=False))
+        self.convs.append(GATConv((-1, -1), hidden_channels, add_self_loops=False, heads=num_heads, concat=False))
         self.bns = nn.ModuleList()
         self.bns.append(nn.BatchNorm1d(hidden_channels))
         for _ in range(num_layers - 2):
-            self.convs.append(GATConv((-1, -1), hidden_channels, add_self_loops=False))
+            self.convs.append(GATConv((-1, -1), hidden_channels, add_self_loops=False, heads=num_heads, concat=False))
             self.bns.append(nn.BatchNorm1d(hidden_channels))
-        self.convs.append(GATConv((-1, -1), out_channels, add_self_loops=False))
+        self.convs.append(GATConv((-1, -1), out_channels, add_self_loops=False, heads=num_heads, concat=False))
         self.dropout = dropout
         self.use_bn = use_bn
 

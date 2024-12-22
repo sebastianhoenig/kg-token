@@ -4,18 +4,29 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
+from src.models.gnn_encoders import load_gnn_model
+from torch_geometric.nn import to_hetero
+
 
 IGNORE_INDEX = -100
 
 
 class GraphTokenGPT(nn.Module):
     # Adapted from https://github.com/franciscoliu/graphprompter/tree/main
-    def __init__(self, args, gnn):
+    def __init__(self, args, metadata):
         super().__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(args.llm_model_path)
         model = AutoModelForCausalLM.from_pretrained(args.llm_model_path)
         self.device = args.device
-        self.gnn = gnn
+        self.gnn = gnn = load_gnn_model[args.gnn_model](
+            hidden_channels=args.gnn_hidden_dim,
+            out_channels=args.gnn_out_dim,
+            num_layers=args.gnn_num_layers,
+            dropout=args.gnn_dropout,
+            use_bn=args.gnn_use_bn,
+            num_heads=args.gnn_num_heads,
+        ).to(self.device)
+        self.gnn = to_hetero(gnn, metadata, aggr=args.gnn_aggr)
         for name, param in model.named_parameters():
             param.requires_grad = False
 
@@ -56,8 +67,8 @@ class GraphTokenGPT(nn.Module):
             answer_tokens = self.tokenizer(answer, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
             EOS_TOKEN = self.tokenizer.eos_token_id
-            PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
-            max_tokens = 100
+            PAD_TOKEN = self.tokenizer.pad_token_id
+            max_tokens = 35
             input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             target_mask = np.zeros_like(input_token)
             target_mask[len(query_tokens) + 1] = 1  # TRYING THIS OUT - REMOVING EOS TOKEN FROM TARGET MASK
@@ -138,8 +149,8 @@ class GraphTokenGPT(nn.Module):
                                                        batch["movie_id"]):
             query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
-            PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
-            max_tokens = 100
+            PAD_TOKEN = self.tokenizer.pad_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
+            max_tokens = 35
             input_token = np.array([BOS_TOKEN] + query_tokens)
             orig_len = len(query_tokens)
             input_token = np.pad(input_token, [[0, max_tokens - orig_len - 1]], constant_values=PAD_TOKEN)
