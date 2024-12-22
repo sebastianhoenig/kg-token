@@ -99,7 +99,10 @@ class MovieLens:
             src = ratings['user_id'].values - 1
             dst = ratings['movie_id'].values - 1
             edge_index = torch.tensor([src, dst], dtype=torch.long)
-            edge_label = torch.tensor((ratings['rating'] > 3).astype(float).values, dtype=torch.float)
+            if self.args.rating_type == 'binary':
+                edge_label = torch.tensor((ratings['rating'] > 3).astype(float).values, dtype=torch.float)
+            else:
+                edge_label = torch.tensor(ratings['rating'].astype(float).values, dtype=torch.float)
             return {"edge_index": edge_index, "edge_label": edge_label}
 
         edge_properties_train = prepare_edges(ratings_train)
