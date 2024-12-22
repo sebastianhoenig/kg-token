@@ -31,7 +31,7 @@ class GraphTokenGPT(nn.Module):
             param.requires_grad = False
 
         self.model = model
-
+        self.fc1 = nn.Linear(args.gnn_hidden_dim, args.llm_embedding_dim).to(self.device)
         special_tokens_dict = {'additional_special_tokens': [args.USER_EMB, args.MOVIE_EMB]}
         self.tokenizer.add_special_tokens(special_tokens_dict)
         self.model.resize_token_embeddings(len(self.tokenizer))
@@ -96,9 +96,12 @@ class GraphTokenGPT(nn.Module):
 
         graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
 
+        user_embeds = self.fc1(graph_embeds['user'])
+        movie_embeds = self.fc1(graph_embeds['movie'])
+
         for i, (user_id, movie_id) in enumerate(zip(user_ids, movie_ids)):
-            movie_embedding = graph_embeds['movie'][movie_id].to(self.device)
-            user_embedding = graph_embeds['user'][user_id].to(self.device)
+            movie_embedding = movie_embeds[movie_id].to(self.device)
+            user_embedding = user_embeds[user_id].to(self.device)
 
             user_token_id = self.tokenizer.convert_tokens_to_ids(self.args.USER_EMB)
             movie_token_id = self.tokenizer.convert_tokens_to_ids(self.args.MOVIE_EMB)
@@ -172,9 +175,12 @@ class GraphTokenGPT(nn.Module):
 
         graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
 
+        user_embeds = self.fc1(graph_embeds['user'])
+        movie_embeds = self.fc1(graph_embeds['movie'])
+
         for i, (user_id, movie_id) in enumerate(zip(user_ids, movie_ids)):
-            movie_embedding = graph_embeds['movie'][movie_id].to(self.device)
-            user_embedding = graph_embeds['user'][user_id].to(self.device)
+            movie_embedding = movie_embeds[movie_id].to(self.device)
+            user_embedding = user_embeds[user_id].to(self.device)
 
             user_token_id = self.tokenizer.convert_tokens_to_ids(self.args.USER_EMB)
             movie_token_id = self.tokenizer.convert_tokens_to_ids(self.args.MOVIE_EMB)
