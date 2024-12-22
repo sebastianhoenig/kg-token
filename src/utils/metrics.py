@@ -89,20 +89,7 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
     }
 
 
-def get_binary_batch_metrics(gt_answers, logits, tokenizer):
-    predictions = torch.argmax(logits, dim=-1)
-
-    target_mask = torch.zeros_like(predictions)
-    target_mask[:, :, -2] = 1  # ONLY THE YES/NO TOKEN
-
-    predictions = predictions[target_mask == 1]
-    predictions = tokenizer.convert_ids_to_tokens(predictions)
-
-    res = yes_no_accuracy(gt_answers, predictions)
-    return res
-
-
-def get_batch_accuracy(batch_labels, logits, target_mask, tokenizer):
+def get_accuracy_gnnllm(batch_labels, logits, target_mask, tokenizer):
     predictions = torch.argmax(logits, dim=-1)
     predictions = predictions[target_mask == 1]
     labels = batch_labels[target_mask == 1]
@@ -110,3 +97,28 @@ def get_batch_accuracy(batch_labels, logits, target_mask, tokenizer):
     target_tokens = tokenizer.convert_ids_to_tokens(labels)
     res = yes_no_accuracy(target_tokens, predicted_tokens)
     return res
+
+
+def get_accuracy_gnn(probs, labels):
+    preds = (probs > 0.5).long()
+
+    num_items = labels.size(0)
+
+    num_yes_targets = (labels == 1).sum().item()
+    num_no_targets = (labels == 0).sum().item()
+
+    num_correct = (preds == labels).sum().item()
+
+    num_correct_yes_preds = ((preds == 1) & (labels == 1)).sum().item()
+    num_correct_no_preds = ((preds == 0) & (labels == 0)).sum().item()
+    num_wrong_yes_preds = ((preds == 1) & (labels == 0)).sum().item()
+    num_wrong_no_preds = ((preds == 0) & (labels == 1)).sum().item()
+
+    return {
+        'acc': num_correct/num_items,
+        'num_correct_yes_preds': num_correct_yes_preds,
+        'num_correct_no_preds': num_correct_no_preds,
+        'num_wrong_no_preds': num_wrong_no_preds,
+        'num_yes_targets': num_yes_targets,
+        'num_no_targets': num_no_targets,
+    }

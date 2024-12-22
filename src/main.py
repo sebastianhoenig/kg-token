@@ -10,8 +10,9 @@ from matplotlib.lines import Line2D
 from src.utils.logging import log_train_to_wandb
 from src.utils.seed import apply_seed
 from src.models.gnn_llm import GraphTokenGPT
-from src.utils.metrics import get_batch_accuracy, yes_no_accuracy
-from src.models.gnn import GATConvTokenEncoder
+from src.models.gnn import GNNPipeline
+from src.utils.metrics import get_accuracy_gnnllm, yes_no_accuracy, get_accuracy_gnn
+from src.models.gnn_encoders import GATConvTokenEncoder
 from torch_geometric.nn import to_hetero
 from src.graph.Movielens100k import MovieLens
 from src.data.Dataset import GraphQADataset
@@ -19,7 +20,47 @@ from src.utils.logging import log_test_to_wandb
 from src.utils.checkpoints import save_model, load_model
 
 
-def train(config: Any):
+def train_gnn(config: Any):
+    apply_seed(0)
+
+    movielens = MovieLens(path=config.dataset_path, device=config.device)
+    movielens.create_graph()
+
+    # Freeze all LLM parameters
+    device = config.device
+
+    graph = movielens.train
+    graph = graph.to(device)
+
+    gnn = GNNPipeline(config, movielens.train.metadata())
+
+    optimizer = torch.optim.AdamW(gnn.parameters(), lr=config.lr)
+
+    for epoch in range(config.num_epochs):
+
+        total_loss = 0
+
+        probs, loss, labels = gnn(graph)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.detach().item()
+
+    train_acc = get_accuracy_gnn(probs, labels)['acc']
+    gnn.eval()
+    test_graph = movielens.test
+    test_graph = test_graph.to(device)
+
+    probs, labels = gnn.inference(test_graph)
+
+    test_acc = get_accuracy_gnn(probs, labels)['acc']
+
+    return total_loss, train_acc, test_acc
+
+
+def train_gnnllm(config: Any):
     apply_seed(0)
 
     wandb.init(project="kg-token", name=config.name, config=config)
@@ -58,13 +99,13 @@ def train(config: Any):
             loss.backward()
             optimizer.step()
 
-            res = get_batch_accuracy(batch_labels, logits, target_mask, gnn_llm.tokenizer)
+            res = get_accuracy_gnnllm(batch_labels, logits, target_mask, gnn_llm.tokenizer)
 
             total_loss += loss.detach().item()
             #scheduler.step(loss.item())
 
             example_ct += batch_size
-            log_train_to_wandb(res, epoch, example_ct, loss, optimizer)
+            log_train_to_wandb(res, epoch, loss, optimizer, example_ct)
 
         avg_loss = total_loss / len(train_loader)
         print(f"Epoch {epoch + 1}/{config.num_epochs}, Loss: {avg_loss}")

@@ -33,7 +33,6 @@ class GraphTokenGPT(nn.Module):
         else:
             self.embedding_layer = self.model.model.get_input_embeddings()
 
-
     def maybe_autocast(self, dtype=torch.float16):
         # If on CPU, don't use autocast
         # If on GPU, use autocast with dtype if provided, otherwise use torch.float16
