@@ -167,21 +167,17 @@ def train_gnnllm(config: Any):
 
 def evaluate(config: Any):
 
-    movielens = MovieLens(path=config.dataset_path, device=config.device)
+    movielens = MovieLens(config)
     movielens.create_graph()
 
     test_dataset = GraphQADataset(graph=movielens.test, config=config)
     test_loader = DataLoader(test_dataset, batch_size=config.batch_size)
     device = config.device
 
-    gnn = GATConvTokenEncoder(config.gnn_hidden_dim, config.llm_embedding_dim)
-    gnn = to_hetero(gnn, movielens.train.metadata(), aggr='sum')
-    gnn.to(device)
-
     graph = movielens.train
     graph = graph.to(device)
 
-    gnn_llm = GraphTokenGPT(config, gnn)
+    gnn_llm = GraphTokenGPT(config, movielens.test.metadata())
     gnn_llm = load_model(gnn_llm, config)
     # Set model to evaluation mode
     gnn_llm.eval()

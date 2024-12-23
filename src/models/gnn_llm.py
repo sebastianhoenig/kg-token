@@ -1,6 +1,6 @@
 import torch
 import contextlib
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, LogitsProcessorList
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
@@ -9,6 +9,16 @@ from torch_geometric.nn import to_hetero
 
 
 IGNORE_INDEX = -100
+
+
+class RestrictVocabLogitsProcessor:
+    def __init__(self, tokenizer):
+        self.allowed_tokens = set(tokenizer.convert_tokens_to_ids(["Yes", "No"]))
+
+    def __call__(self, input_ids, scores):
+        for i, token_scores in enumerate(scores):
+            scores[i] = token_scores.masked_fill(~torch.isin(torch.arange(len(token_scores)), self.allowed_tokens), -float('inf'))
+        return scores
 
 
 class GraphTokenGPT(nn.Module):
@@ -43,6 +53,8 @@ class GraphTokenGPT(nn.Module):
             self.embedding_layer = self.model.get_input_embeddings()
         else:
             self.embedding_layer = self.model.model.get_input_embeddings()
+
+        self.logits_processor = LogitsProcessorList([RestrictVocabLogitsProcessor(self.tokenizer)])
 
     def maybe_autocast(self, dtype=torch.float16):
         # If on CPU, don't use autocast
@@ -152,7 +164,7 @@ class GraphTokenGPT(nn.Module):
                                                        batch["movie_id"]):
             query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
-            PAD_TOKEN = self.tokenizer.pad_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
+            PAD_TOKEN = self.tokenizer.eos_token_id  # TODO CHANGE AS WELL WHEN NO LONGER GPT2
             max_tokens = 35
             input_token = np.array([BOS_TOKEN] + query_tokens)
             orig_len = len(query_tokens)
@@ -203,8 +215,9 @@ class GraphTokenGPT(nn.Module):
             outputs = self.model.generate(
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
-                max_new_tokens=3,
-                use_cache=True
+                max_new_tokens=1,
+                use_cache=True,
+                logits_processor=self.logits_processor
             )
 
         pred = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)

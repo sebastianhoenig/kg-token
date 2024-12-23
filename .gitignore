@@ -170,3 +170,4 @@ cython_debug/
 /src/ckpts/
 /src/graph/FeatureEncoder1.py
 /src/graph/Movielens100k1.py
+/src/results/
