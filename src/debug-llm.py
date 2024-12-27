@@ -1,6 +1,6 @@
 from argparse import Namespace
 import torch
-from src.main import train_gnnllm
+from src.gnnllm import train_gnnllm
 args = Namespace(
     # PATHS
     llm_model_path="/Users/sebastian/University/Master/third term/sem-proj/kg-token/weights/gpt2-medium",
