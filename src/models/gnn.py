@@ -35,7 +35,7 @@ class GNNPipeline(nn.Module):
         src = node_embeddings[edge_index[0]]  # Shape: [num_edges, in_channels]
         dst = node_embeddings[edge_index[1]]  # Shape: [num_edges, in_channels]
 
-        # Combine source and target node embeddings (e.g., concatenation)
+        # Combine user and movie node
         edge_embeddings = torch.cat([src, dst], dim=1)  # Shape: [num_edges, in_channels * 2]
 
         # Predict edge label probabilities
@@ -54,21 +54,16 @@ class GNNPipeline(nn.Module):
         return logits, loss, edge_labels.float()
 
     def inference(self, graph):
-        # Extract graph embeddings using the GNN
         graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
 
-        # Edge index for inference
         edge_index = graph.edge_index_dict['user', 'likes', 'movie']
 
-        # Pass through EdgeDecoder
         node_embeddings = torch.cat([graph_embeds['user'], graph_embeds['movie']], dim=0)
         src = node_embeddings[edge_index[0]]  # Shape: [num_edges, in_channels]
         dst = node_embeddings[edge_index[1]]  # Shape: [num_edges, in_channels]
 
-        # Combine source and target node embeddings (e.g., concatenation)
         edge_embeddings = torch.cat([src, dst], dim=1)  # Shape: [num_edges, in_channels * 2]
 
-        # Predict edge label probabilities
         logits = self.fc2(self.fc1(edge_embeddings).relu()).squeeze()  # Shape: [num_edges]
         if self.args.rating_type == 'binary':
             probabilities = torch.sigmoid(logits)

@@ -44,6 +44,7 @@ def train_gnn(config: Any):
         total_loss = 0
 
         probs, loss, labels = gnn(graph)
+        #print(get_accuracy_gnn_binary_task(probs, labels)['acc'])
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()

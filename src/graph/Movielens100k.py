@@ -29,9 +29,18 @@ class MovieLens:
             node_name_tmp = []
             for col, encoder in encoders.items():
                 if col in df.columns:
-                    node_name_tmp.append(encoder(df[col]))
+                    encoded = encoder(df[col])
+                    if encoded.dim() == 1:
+                        node_name_tmp.append(encoded.view(-1, 1))
+                    else:
+                        node_name_tmp.append(encoded)
                 else:
-                    node_name_tmp.append(encoder(col))
+                    encoded = encoder(col)
+                    if encoded.dim() == 1:
+                        node_name_tmp.append(encoded.view(-1, 1))
+                    else:
+                        node_name_tmp.append(encoded)
+
             node_embedding = torch.cat(node_name_tmp, dim=-1)
         return {"node_embedding": node_embedding, "node_mapping": node_mapping}
 
@@ -86,7 +95,13 @@ class MovieLens:
         src_node = dict()
         dst_node = dict()
 
-        src_node["user"] = self.load_node_csv(df=users.set_index('user_id'))
+        src_node["user"] = self.load_node_csv(
+            df=users.set_index('user_id'),
+            encoders={
+                "occupation": OneHotColumn(device=self.device),
+                "gender": OneHotColumn(device=self.device),
+                #"age": NumericalColumn(),
+            })
         dst_node["movie"] = self.load_node_csv(
             df=movies.set_index('movie_id'),
             encoders={
@@ -111,7 +126,7 @@ class MovieLens:
         # Create data object
         data_train = HeteroData()
         data_train = self.assign_node_property(
-            data=data_train, node_name="user", is_feature_available=False, node_tensor=src_node
+            data=data_train, node_name="user", is_feature_available=True, node_tensor=src_node
         )
         data_train = self.assign_node_property(
             data=data_train, node_name="movie", is_feature_available=True, node_tensor=dst_node
@@ -120,13 +135,13 @@ class MovieLens:
             data=data_train, src_name="user", dst_name="movie", relation="likes", edge_properties=edge_properties_train
         )
 
-        data_train["user"].x = torch.eye(data_train["user"].num_nodes, device=self.device)
+        data_train["user"].x = torch.eye(data_train["user"].num_nodes, device=self.device)#torch.cat([data_train["user"].x, torch.eye(data_train["user"].num_nodes, device=self.device)], dim=1)
 
         del data_train["user"].num_nodes
 
         data_test = HeteroData()
         data_test = self.assign_node_property(
-            data=data_test, node_name="user", is_feature_available=False, node_tensor=src_node
+            data=data_test, node_name="user", is_feature_available=True, node_tensor=src_node
         )
         data_test = self.assign_node_property(
             data=data_test, node_name="movie", is_feature_available=True, node_tensor=dst_node
@@ -135,7 +150,7 @@ class MovieLens:
             data=data_test, src_name="user", dst_name="movie", relation="likes", edge_properties=edge_properties_test
         )
 
-        data_test["user"].x = torch.eye(data_test["user"].num_nodes, device=self.device)
+        data_test["user"].x = torch.eye(data_test["user"].num_nodes, device=self.device)#torch.cat([data_test["user"].x, torch.eye(data_test["user"].num_nodes, device=self.device)], dim=1)
 
         del data_test["user"].num_nodes
 
@@ -153,6 +168,19 @@ class GenresColumn:
 
     def __call__(self, col) -> torch.Tensor:
         return torch.tensor(self.df.values, dtype=torch.float32)
+
+
+class NumericalColumn:
+    def __call__(self, df) -> torch.Tensor:
+        return torch.tensor(df.values, dtype=torch.float32)
+
+
+class OneHotColumn:
+    def __init__(self, device):
+        self.device = device
+
+    def __call__(self, df) -> torch.Tensor:
+        return torch.tensor(pd.get_dummies(df).values, dtype=torch.float32, device=self.device)
 
 
 class TokenEmbedding:
