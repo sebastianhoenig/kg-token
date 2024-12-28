@@ -11,16 +11,6 @@ from torch_geometric.nn import to_hetero
 IGNORE_INDEX = -100
 
 
-class RestrictVocabLogitsProcessor:
-    def __init__(self, tokenizer):
-        self.allowed_tokens = torch.tensor(tokenizer.convert_tokens_to_ids(["Yes", "No"]))
-
-    def __call__(self, input_ids, scores):
-        for i, token_scores in enumerate(scores):
-            scores[i] = token_scores.masked_fill(~torch.isin(torch.arange(len(token_scores)), self.allowed_tokens), -float('inf'))
-        return scores
-
-
 class GraphTokenGPT(nn.Module):
     # Adapted from https://github.com/franciscoliu/graphprompter/tree/main
     def __init__(self, args, metadata):
@@ -54,7 +44,6 @@ class GraphTokenGPT(nn.Module):
         else:
             self.embedding_layer = self.model.model.get_input_embeddings()
 
-        self.logits_processor = LogitsProcessorList([RestrictVocabLogitsProcessor(self.tokenizer)])
 
     def maybe_autocast(self, dtype=torch.float16):
         # If on CPU, don't use autocast
@@ -216,7 +205,7 @@ class GraphTokenGPT(nn.Module):
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
                 use_cache=True,
-                max_new_tokens=self.args.max_new_tokens
+                max_new_tokens=1
             )
 
         pred = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
