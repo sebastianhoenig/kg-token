@@ -216,7 +216,7 @@ class GraphTokenGPT(nn.Module):
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
                 use_cache=True,
-                max_new_tokens=32
+                max_new_tokens=self.args.max_new_tokens
             )
 
         pred = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
