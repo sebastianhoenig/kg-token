@@ -153,7 +153,7 @@ class GraphTokenGPT(nn.Module):
                                                        batch["movie_id"]):
             query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
-            PAD_TOKEN = self.tokenizer.pad_token_id
+            PAD_TOKEN = self.tokenizer.eos_token_id
             max_tokens = 35
             input_token = np.array([BOS_TOKEN] + query_tokens)
             orig_len = len(query_tokens)
@@ -201,14 +201,20 @@ class GraphTokenGPT(nn.Module):
         batch_attention_masks = torch.stack(batch_attention_masks)
 
         with self.maybe_autocast():
-            outputs = self.model.generate(
+            outputs = self.model(
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
-                use_cache=True,
-                max_new_tokens=1
+                use_cache=True
             )
 
-        pred = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        # Retrieve logits from the model's output
+        logits = outputs.logits
+
+        # Get the token with the highest probability at the last position
+        predicted_tokens = logits[:, -1, :].argmax(dim=-1)
+
+        # Decode the tokens to text
+        pred = self.tokenizer.batch_decode(predicted_tokens.unsqueeze(1), skip_special_tokens=True)
 
         return {
             'questions': batch["question"],
