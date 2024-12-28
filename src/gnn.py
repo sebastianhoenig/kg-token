@@ -4,7 +4,7 @@ from src.utils.seed import apply_seed
 from src.models.gnn import GNNPipeline
 from src.utils.metrics import get_accuracy_gnn_binary_task, get_rmse_gnn_regression_task
 from src.graph.Movielens100k import MovieLens
-
+from tqdm import tqdm
 
 def train_gnn(config: Any):
     apply_seed(0)
@@ -22,7 +22,7 @@ def train_gnn(config: Any):
 
     optimizer = torch.optim.AdamW(gnn.parameters(), lr=config.lr)
 
-    for epoch in range(config.num_epochs):
+    for epoch in tqdm(range(config.num_epochs)):
 
         total_loss = 0
 
@@ -49,4 +49,5 @@ def train_gnn(config: Any):
     else:
         test_acc = get_rmse_gnn_regression_task(probs, labels)['rmse']
 
+    print(test_acc)
     return total_loss, train_acc, test_acc

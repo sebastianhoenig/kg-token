@@ -127,9 +127,6 @@ def get_accuracy_gnn_binary_task(probs, labels):
     }
 
 
-import torch
-
-
 def get_rmse_gnn_regression_task(preds, labels):
     """
     Computes the RMSE for a regression task.
