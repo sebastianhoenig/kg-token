@@ -165,7 +165,7 @@ class GraphTokenGPT(nn.Module):
             query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
             PAD_TOKEN = self.tokenizer.pad_token_id
-            max_tokens = 100
+            max_tokens = 35
             input_token = np.array([BOS_TOKEN] + query_tokens)
             orig_len = len(query_tokens)
             input_token = np.pad(input_token, [[0, max_tokens - orig_len - 1]], constant_values=PAD_TOKEN)
@@ -215,7 +215,6 @@ class GraphTokenGPT(nn.Module):
             outputs = self.model.generate(
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
-                max_new_tokens=1,
                 use_cache=True,
             )
 
