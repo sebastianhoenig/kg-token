@@ -13,7 +13,10 @@ IGNORE_INDEX = -100
 
 class RestrictVocabLogitsProcessor:
     def __init__(self, tokenizer, device):
-        self.allowed_tokens = torch.tensor(tokenizer.convert_tokens_to_ids(["Yes", "No"]))
+        self.allowed_tokens = torch.tensor(
+            tokenizer.convert_tokens_to_ids(["Yes", "No"]),
+            device=device
+        )
         self.device = device
 
     def __call__(self, input_ids, scores):
