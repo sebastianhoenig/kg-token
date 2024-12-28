@@ -81,12 +81,9 @@ def train_gnnllm(config: Any):
 
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Evaluating"):
-            test_results = gnn_llm.inference(batch, graph)
-            print("Predictions")
-            print(test_results["predictions"])
-            print("Answers")
-            print(test_results["answers"])
-            batch_res = yes_no_accuracy(test_results["answers"], test_results["predictions"])
+            logits, batch_labels, target_mask = gnn_llm.inference(batch, graph)
+
+            batch_res = get_accuracy_gnnllm(batch_labels, logits, target_mask, gnn_llm.tokenizer)
 
             total_correct_yes_preds += batch_res['num_correct_yes_preds']
             total_correct_no_preds += batch_res['num_correct_no_preds']
@@ -135,12 +132,9 @@ def evaluate(config: Any):
 
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Evaluating"):
-            test_results = gnn_llm.inference(batch, graph)
-            print("Predictions")
-            print(test_results["predictions"])
-            print("Answers")
-            print(test_results["answers"])
-            batch_res = yes_no_accuracy(test_results["answers"], test_results["predictions"])
+            logits, batch_labels, target_mask = gnn_llm.inference(batch, graph)
+
+            batch_res = get_accuracy_gnnllm(batch_labels, logits, target_mask, gnn_llm.tokenizer)
 
             total_correct_yes_preds += batch_res['num_correct_yes_preds']
             total_correct_no_preds += batch_res['num_correct_no_preds']

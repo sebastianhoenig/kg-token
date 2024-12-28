@@ -11,20 +11,6 @@ from torch_geometric.nn import to_hetero
 IGNORE_INDEX = -100
 
 
-class RestrictVocabLogitsProcessor:
-    def __init__(self, tokenizer, device):
-        self.allowed_tokens = torch.tensor(
-            tokenizer.convert_tokens_to_ids(["Yes", "No"]),
-            device=device
-        )
-        self.device = device
-
-    def __call__(self, input_ids, scores):
-        for i, token_scores in enumerate(scores):
-            scores[i] = token_scores.masked_fill(~torch.isin(torch.arange(len(token_scores), device=self.device), self.allowed_tokens),-float('inf'))
-        return scores
-
-
 class GraphTokenGPT(nn.Module):
     # Adapted from https://github.com/franciscoliu/graphprompter/tree/main
     def __init__(self, args, metadata):
@@ -57,8 +43,6 @@ class GraphTokenGPT(nn.Module):
             self.embedding_layer = self.model.get_input_embeddings()
         else:
             self.embedding_layer = self.model.model.get_input_embeddings()
-        self.logits_processors = LogitsProcessorList([RestrictVocabLogitsProcessor(self.tokenizer, self.device)])
-
 
     def maybe_autocast(self, dtype=torch.float16):
         # If on CPU, don't use autocast
@@ -162,32 +146,41 @@ class GraphTokenGPT(nn.Module):
         attention_masks = []
         user_ids = []
         movie_ids = []
+        target_masks = []
         input_tokens = []
 
         for question, answer, user_id, movie_id in zip(batch["question"], batch["answer"], batch["user_id"],
                                                        batch["movie_id"]):
             query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
+            answer_tokens = self.tokenizer(answer, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
+            EOS_TOKEN = self.tokenizer.eos_token_id
             PAD_TOKEN = self.tokenizer.pad_token_id
             max_tokens = 35
-            input_token = np.array([BOS_TOKEN] + query_tokens)
-            orig_len = len(query_tokens)
+            input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
+            target_mask = np.zeros_like(input_token)
+            target_mask[len(query_tokens) + 1] = 1  # TRYING THIS OUT - REMOVING EOS TOKEN FROM TARGET MASK
+            orig_len = len(query_tokens) + len(answer_tokens) + 1
             input_token = np.pad(input_token, [[0, max_tokens - orig_len - 1]], constant_values=PAD_TOKEN)
+            target_mask = np.pad(target_mask, [[0, max_tokens - orig_len - 1]], constant_values=0)
             attention_mask = np.ones_like(input_token)
             attention_mask[input_token == PAD_TOKEN] = 0
 
             attention_masks.append(torch.tensor(attention_mask))
             user_ids.append(user_id)
             movie_ids.append(movie_id)
+            target_masks.append(torch.tensor(target_mask))
             input_tokens.append(torch.tensor(input_token))
 
         attention_masks = torch.stack(attention_masks).to(self.device)
         user_ids = torch.stack(user_ids).to(self.device)
         movie_ids = torch.stack(movie_ids).to(self.device)
+        target_masks = torch.stack(target_masks).to(self.device)
         input_tokens = torch.stack(input_tokens).to(self.device)
 
         batch_embeddings = []
         batch_attention_masks = []
+        batch_labels = []
 
         graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
 
@@ -211,25 +204,23 @@ class GraphTokenGPT(nn.Module):
 
             batch_embeddings.append(input_embeddings)
             batch_attention_masks.append(attention_masks[i])
+            batch_labels.append(input_tokens[i].clone())
 
         batch_embeddings = torch.stack(batch_embeddings)
         batch_attention_masks = torch.stack(batch_attention_masks)
+        batch_labels = torch.stack(batch_labels)
 
         with self.maybe_autocast():
-            outputs = self.model.generate(
+            outputs = self.model(
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
-                use_cache=True,
-                max_new_tokens=self.args.max_new_tokens,
-                logits_processor=self.logits_processors
+                labels=batch_labels,
             )
 
-        pred = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        logits = outputs.logits
+        logits = logits[:, :-1, :].contiguous()
 
-        return {
-            'questions': batch["question"],
-            'answers': batch["answer"],
-            'predictions': pred,
-            'users': user_ids,
-            'movies': movie_ids
-        }
+        batch_labels = batch_labels[:, 1:]
+        target_masks = target_masks[:, 1:]
+
+        return logits, batch_labels, target_masks
