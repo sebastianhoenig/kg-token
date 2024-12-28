@@ -224,3 +224,4 @@ class GraphTokenGPT(nn.Module):
         target_masks = target_masks[:, 1:]
 
         return logits, batch_labels, target_masks
+    
