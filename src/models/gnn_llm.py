@@ -11,6 +11,17 @@ from torch_geometric.nn import to_hetero
 IGNORE_INDEX = -100
 
 
+class RestrictVocabLogitsProcessor:
+    def __init__(self, tokenizer, device):
+        self.allowed_tokens = torch.tensor(tokenizer.convert_tokens_to_ids(["Yes", "No"]))
+        self.device = device
+
+    def __call__(self, input_ids, scores):
+        for i, token_scores in enumerate(scores):
+            scores[i] = token_scores.masked_fill(~torch.isin(torch.arange(len(token_scores), device=self.device), self.allowed_tokens),-float('inf'))
+        return scores
+
+
 class GraphTokenGPT(nn.Module):
     # Adapted from https://github.com/franciscoliu/graphprompter/tree/main
     def __init__(self, args, metadata):
@@ -43,6 +54,7 @@ class GraphTokenGPT(nn.Module):
             self.embedding_layer = self.model.get_input_embeddings()
         else:
             self.embedding_layer = self.model.model.get_input_embeddings()
+        self.logits_processors = LogitsProcessorList([RestrictVocabLogitsProcessor(self.tokenizer, self.device)])
 
 
     def maybe_autocast(self, dtype=torch.float16):
@@ -153,7 +165,7 @@ class GraphTokenGPT(nn.Module):
                                                        batch["movie_id"]):
             query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
-            PAD_TOKEN = self.tokenizer.eos_token_id
+            PAD_TOKEN = self.tokenizer.pad_token_id
             max_tokens = 35
             input_token = np.array([BOS_TOKEN] + query_tokens)
             orig_len = len(query_tokens)
@@ -201,20 +213,15 @@ class GraphTokenGPT(nn.Module):
         batch_attention_masks = torch.stack(batch_attention_masks)
 
         with self.maybe_autocast():
-            outputs = self.model(
+            outputs = self.model.generate(
                 inputs_embeds=batch_embeddings,
                 attention_mask=batch_attention_masks,
-                use_cache=True
+                use_cache=True,
+                max_new_tokens=self.args.max_new_tokens,
+                logits_processor=self.logits_processors
             )
 
-        # Retrieve logits from the model's output
-        logits = outputs.logits
-
-        # Get the token with the highest probability at the last position
-        predicted_tokens = logits[:, -1, :].argmax(dim=-1)
-
-        # Decode the tokens to text
-        pred = self.tokenizer.batch_decode(predicted_tokens.unsqueeze(1), skip_special_tokens=True)
+        pred = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
         return {
             'questions': batch["question"],

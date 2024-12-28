@@ -135,7 +135,6 @@ def evaluate(config: Any):
 
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Evaluating"):
-
             test_results = gnn_llm.inference(batch, graph)
             print("Predictions")
             print(test_results["predictions"])

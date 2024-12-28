@@ -90,28 +90,11 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
 
 
 def get_accuracy_gnnllm(batch_labels, logits, target_mask, tokenizer):
-    probs = torch.softmax(logits, dim=-1)
-
-    yes_id = tokenizer.convert_tokens_to_ids("Yes")
-    no_id = tokenizer.convert_tokens_to_ids("No")
-
-    # Extract probabilities for "Yes" and "No"
-    yes_probs = probs[:, :, yes_id]  # Shape: (batch_size, sequence_length)
-    no_probs = probs[:, :, no_id]  # Shape: (batch_size, sequence_length)
-    print(yes_probs)
-    print(no_probs)
-    # Predict based on higher probability between "Yes" and "No"
-    predictions = torch.where(yes_probs > no_probs, yes_id, no_id)
-    print(predictions)
-    # Filter predictions and labels with the target mask
-    #predictions = predictions[target_mask == 1]
+    predictions = torch.argmax(logits, dim=-1)
+    predictions = predictions[target_mask == 1]
     labels = batch_labels[target_mask == 1]
-
-    # Convert predictions and labels to tokens
     predicted_tokens = tokenizer.convert_ids_to_tokens(predictions)
     target_tokens = tokenizer.convert_ids_to_tokens(labels)
-
-    # Calculate accuracy
     res = yes_no_accuracy(target_tokens, predicted_tokens)
     return res
 
