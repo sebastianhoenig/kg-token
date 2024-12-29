@@ -3,6 +3,7 @@ import wandb
 from torch.utils.data import DataLoader
 import torch
 import tqdm
+import json
 from tqdm.notebook import tqdm
 from src.utils.logging import log_train_to_wandb
 from src.utils.seed import apply_seed
@@ -199,8 +200,8 @@ def evaluate_age(config: Any):
     aggregated_res = {
         "total_correct": total_correct,
         "total_items": total_items,
-        "age_category_counts": age_category_counts,
-        "correct_predictions": correct_predictions,
+        "age_category_counts": json.dumps(age_category_counts, indent=4),
+        "correct_predictions": json.dumps(correct_predictions, indent=4),
     }
 
     log_age_downstream_task_to_wandb(aggregated_res)
@@ -242,8 +243,8 @@ def evaluate_gender(config: Any):
     aggregated_res = {
         "total_correct": total_correct,
         "total_items": total_items,
-        "gender_category_counts": gender_category_counts,
-        "correct_predictions": correct_predictions,
+        "gender_category_counts": json.dumps(gender_category_counts, indent=4),
+        "correct_predictions": json.dumps(correct_predictions, indent=4),
     }
 
     log_gender_downstream_task_to_wandb(aggregated_res)
