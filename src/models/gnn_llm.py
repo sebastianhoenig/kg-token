@@ -31,7 +31,7 @@ class GraphTokenGPT(nn.Module):
             param.requires_grad = False
 
         self.model = model
-        self.fc1 = F.relu(nn.Linear(args.gnn_hidden_dim, args.llm_embedding_dim//2).to(self.device))
+        self.fc1 = nn.Linear(args.gnn_hidden_dim, args.llm_embedding_dim//2).to(self.device)
         self.fc2 = nn.Linear(args.llm_embedding_dim//2, args.llm_embedding_dim).to(self.device)
         special_tokens_dict = {'additional_special_tokens': [args.USER_EMB, args.MOVIE_EMB]}
         self.tokenizer.add_special_tokens(special_tokens_dict)
@@ -97,8 +97,8 @@ class GraphTokenGPT(nn.Module):
 
         graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
 
-        user_embeds = self.fc2(self.fc1(graph_embeds['user']))
-        movie_embeds = self.fc2(self.fc1(graph_embeds['movie']))
+        user_embeds = self.fc2(F.relu(self.fc1(graph_embeds['user'])))
+        movie_embeds = self.fc2(F.relu(self.fc1(graph_embeds['movie'])))
 
         for i, (user_id, movie_id) in enumerate(zip(user_ids, movie_ids)):
             movie_embedding = movie_embeds[movie_id].to(self.device)
