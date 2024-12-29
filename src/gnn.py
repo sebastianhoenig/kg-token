@@ -50,4 +50,7 @@ def train_gnn(config: Any):
         test_acc = get_rmse_gnn_regression_task(probs, labels)['rmse']
 
     print(test_acc)
+
+    # save gnn
+    torch.save(gnn.state_dict(), 'pretrained-gnn.pt')
     return total_loss, train_acc, test_acc
