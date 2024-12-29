@@ -109,6 +109,8 @@ def train_gnnllm(config: Any):
 
     log_test_to_wandb(aggregated_res)
 
+    wandb.finish()
+
 
 def evaluate(config: Any):
 
@@ -164,6 +166,9 @@ def evaluate(config: Any):
 
 
 def evaluate_age(config: Any):
+
+    wandb.init(project="kg-token", name="Age-DS-Task", config=config)
+
     movielens = MovieLens(config)
     movielens.create_graph()
 
@@ -200,8 +205,13 @@ def evaluate_age(config: Any):
 
     log_age_downstream_task_to_wandb(aggregated_res)
 
+    wandb.finish()
+
 
 def evaluate_gender(config: Any):
+
+    wandb.init(project="kg-token", name="Gender-DS-Task", config=config)
+
     movielens = MovieLens(config)
     movielens.create_graph()
 
@@ -237,4 +247,6 @@ def evaluate_gender(config: Any):
     }
 
     log_gender_downstream_task_to_wandb(aggregated_res)
+
+    wandb.finish()
 
