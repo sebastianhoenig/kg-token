@@ -6,12 +6,14 @@ import tqdm
 from tqdm.notebook import tqdm
 from src.utils.logging import log_train_to_wandb
 from src.utils.seed import apply_seed
-from src.models.gnn_llm import GraphTokenGPT
+from src.models.gnn_llm import GraphTokenLLM
 from src.utils.metrics import get_accuracy_gnnllm
 from src.graph.Movielens100k import MovieLens
 from src.data.Dataset import GraphQADataset
-from src.utils.logging import log_test_to_wandb
+from src.utils.logging import log_test_to_wandb, log_age_downstream_task_to_wandb, log_gender_downstream_task_to_wandb
 from src.utils.checkpoints import save_model, load_model
+from src.data.DownstreamAgeDataset import AgeDataset
+from src.data.DownstreamGenderDataset import GenderDataset
 
 
 def train_gnnllm(config: Any):
@@ -33,7 +35,7 @@ def train_gnnllm(config: Any):
 
     example_ct = 0  # number of examples seen
 
-    gnn_llm = GraphTokenGPT(config, movielens.train.metadata())
+    gnn_llm = GraphTokenLLM(config, movielens.train.metadata())
 
     params = [p for _, p in gnn_llm.named_parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(
@@ -120,7 +122,7 @@ def evaluate(config: Any):
     graph = movielens.train
     graph = graph.to(device)
 
-    gnn_llm = GraphTokenGPT(config, movielens.test.metadata())
+    gnn_llm = GraphTokenLLM(config, movielens.test.metadata())
     gnn_llm = load_model(gnn_llm, config)
     # Set model to evaluation mode
     gnn_llm.eval()
@@ -159,4 +161,80 @@ def evaluate(config: Any):
     print(aggregated_res)
 
     log_test_to_wandb(aggregated_res)
+
+
+def evaluate_age(config: Any):
+    movielens = MovieLens(config)
+    movielens.create_graph()
+
+    total_correct, total_items = 0, 0
+    age_category_counts = {"Young": 0, "Adult": 0, "Old": 0}
+    correct_predictions = {"Young": 0, "Adult": 0, "Old": 0}
+
+    test_dataset = AgeDataset(graph=movielens.test, config=config)
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
+    device = config.device
+
+    gnn_llm = GraphTokenLLM(config, movielens.test.metadata())
+    gnn_llm = load_model(gnn_llm, config)
+    gnn_llm = gnn_llm.to(device)
+    gnn_llm.eval()  # Set model to evaluation mode
+
+    with torch.no_grad():
+        for batch in tqdm(test_loader, desc="Evaluating"):
+            logits, batch_labels, target_masks = gnn_llm.inference_downstream(batch, graph=movielens.test)
+
+            batch_res = get_accuracy_gnnllm(batch_labels, logits, target_masks, gnn_llm.tokenizer, task='age')
+            total_correct += batch_res['total_correct']
+            total_items += batch_res['total_items']
+            for key in age_category_counts:
+                age_category_counts[key] += batch_res['age_category_counts'][key]
+                correct_predictions[key] += batch_res['correct_predictions'][key]
+
+    aggregated_res = {
+        "total_correct": total_correct,
+        "total_items": total_items,
+        "age_category_counts": age_category_counts,
+        "correct_predictions": correct_predictions,
+    }
+
+    log_age_downstream_task_to_wandb(aggregated_res)
+
+
+def evaluate_gender(config: Any):
+    movielens = MovieLens(config)
+    movielens.create_graph()
+
+    total_correct, total_items = 0, 0
+    gender_category_counts = {"Male": 0, "Female": 0}
+    correct_predictions = {"Male": 0, "Female": 0}
+
+    test_dataset = GenderDataset(graph=movielens.test, config=config)
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
+    device = config.device
+
+    gnn_llm = GraphTokenLLM(config, movielens.test.metadata())
+    gnn_llm = load_model(gnn_llm, config)
+    gnn_llm = gnn_llm.to(device)
+    gnn_llm.eval()  # Set model to evaluation mode
+
+    with torch.no_grad():
+        for batch in tqdm(test_loader, desc="Evaluating"):
+            logits, batch_labels, target_masks = gnn_llm.inference_downstream(batch, graph=movielens.test)
+
+            batch_res = get_accuracy_gnnllm(batch_labels, logits, target_masks, gnn_llm.tokenizer, task='gender')
+            total_correct += batch_res['total_correct']
+            total_items += batch_res['total_items']
+            for key in gender_category_counts:
+                gender_category_counts[key] += batch_res['age_category_counts'][key]
+                correct_predictions[key] += batch_res['correct_predictions'][key]
+
+    aggregated_res = {
+        "total_correct": total_correct,
+        "total_items": total_items,
+        "gender_category_counts": gender_category_counts,
+        "correct_predictions": correct_predictions,
+    }
+
+    log_gender_downstream_task_to_wandb(aggregated_res)
 

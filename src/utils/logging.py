@@ -56,3 +56,45 @@ def log_test_to_wandb(res):
     table = wandb.Table(columns=["Metric", "Value"], data=data)
 
     wandb.log({"evaluation_table": table})
+
+
+def log_age_downstream_task_to_wandb(res):
+    total_correct = res['total_correct']
+    total_items = res['total_items']
+    age_category_counts = res['age_category_counts']
+    correct_predictions = res['correct_predictions']
+
+    accuracy = total_correct/total_items if total_items > 0 else 0
+
+    data = [
+        ["accuracy", accuracy],
+        ["total_correct", total_correct],
+        ["total_items", total_items],
+        ["age_category_counts", age_category_counts],
+        ["correct_predictions", correct_predictions],
+    ]
+
+    table = wandb.Table(columns=["Metric", "Value"], data=data)
+
+    wandb.log({"age_evaluation_table": table})
+
+
+def log_gender_downstream_task_to_wandb(res):
+    total_correct = res['total_correct']
+    total_items = res['total_items']
+    gender_category_counts = res['gender_category_counts']
+    correct_predictions = res['correct_predictions']
+
+    accuracy = total_correct/total_items if total_items > 0 else 0
+
+    data = [
+        ["accuracy", accuracy],
+        ["total_correct", total_correct],
+        ["total_items", total_items],
+        ["gender_category_counts", gender_category_counts],
+        ["correct_predictions", correct_predictions],
+    ]
+
+    table = wandb.Table(columns=["Metric", "Value"], data=data)
+
+    wandb.log({"gender_evaluation_table": table})

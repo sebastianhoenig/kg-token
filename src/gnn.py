@@ -6,6 +6,7 @@ from src.utils.metrics import get_accuracy_gnn_binary_task, get_rmse_gnn_regress
 from src.graph.Movielens100k import MovieLens
 from tqdm import tqdm
 
+
 def train_gnn(config: Any):
     apply_seed(0)
 

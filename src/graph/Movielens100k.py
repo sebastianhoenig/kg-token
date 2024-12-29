@@ -103,11 +103,14 @@ class MovieLens:
         if "age" in self.args.user_feats:
             user_encoders["age"] = NumericalColumn()
 
+        users = users.set_index('user_id')
+        movies = movies.set_index('movie_id')
+
         src_node["user"] = self.load_node_csv(
-            df=users.set_index('user_id'),
+            df=users,
             encoders=user_encoders)
         dst_node["movie"] = self.load_node_csv(
-            df=movies.set_index('movie_id'),
+            df=movies,
             encoders={
                 "movie_title": TokenEmbedding(device=self.device),
                 "genres": GenresColumn(movies[self.genres])
@@ -146,6 +149,9 @@ class MovieLens:
 
         del data_train["user"].num_nodes
 
+        data_train["user"].gender = users["gender"].values
+        data_train["user"].age = users["age"].values
+
         data_test = HeteroData()
         data_test = self.assign_node_property(
             data=data_test, node_name="user", is_feature_available=bool(self.args.user_feats), node_tensor=src_node
@@ -163,6 +169,9 @@ class MovieLens:
             data_test["user"].x = torch.cat([data_test["user"].x, torch.eye(data_test["user"].num_nodes, device=self.device)], dim=1)
 
         del data_test["user"].num_nodes
+
+        data_test["user"].gender = users["gender"].values
+        data_test["user"].age = users["age"].values
 
         # Convert to undirected and finalize
         self.train = ToUndirected()(data_train).to(self.device)

@@ -1,4 +1,3 @@
-# Adapted from https://github.com/google-research/talk-like-a-graph/blob/main/talk_like_a_graph/graph_metrics.py
 """Metrics for seqio tasks over graph data.
 
 This module contains definitions of metric_fns to be used for scoring
@@ -9,26 +8,7 @@ from typing import Mapping, Sequence
 
 
 def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mapping[str, float]:
-    """Assesses the accuracy of LLM outputs on Yes/No tasks.
-
-    Targets must contain either the word 'yes' or the word 'no' but not both.
-
-    Predictions are binarized by checking for 'yes' or 'no' in the first line.
-
-    Args:
-      targets: The expected output strings.
-      predictions: The LLM outputs.
-
-    Returns:
-       Returns a dict of the following metrics:
-        yes_no_accuracy: The % where the target and prediction match.
-        yes_no_ambiguous: The % where the prediction contained yes and no
-        yes_no_indeterminate: The % where the prediction contained neither yes nor
-        no
-
-    Raises:
-      ValueError: If a target string contains 'yes' and 'no'
-    """
+    # Adapted from https://github.com/google-research/talk-like-a-graph/blob/main/talk_like_a_graph/graph_metrics.py
     print(predictions)
     num_correct = 0
     num_ambiguous = 0
@@ -89,14 +69,63 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
     }
 
 
-def get_accuracy_gnnllm(batch_labels, logits, target_mask, tokenizer):
+def age_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mapping[str, float]:
+    total_correct = 0
+    total_items = 0
+    age_category_counts = {"Young": 0, "Adult": 0, "Old": 0}
+    correct_predictions = {"Young": 0, "Adult": 0, "Old": 0}
+
+    for label, prediction in zip(targets, predictions):
+        total_items += 1
+        age_category_counts[label] += 1
+        if label == prediction:
+            total_correct += 1
+            correct_predictions[label] += 1
+
+    return {
+        "total_correct": total_correct,
+        "total_items": total_items,
+        "age_category_counts": age_category_counts,
+        "correct_predictions": correct_predictions,
+    }
+
+
+def gender_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mapping[str, float]:
+    total_correct = 0
+    total_items = 0
+
+    gender_category_counts = {"Male": 0, "Female": 0}
+    correct_predictions = {"Male": 0, "Female": 0}
+
+    for label, prediction in zip(targets, predictions):
+        total_items += 1
+        gender_category_counts[label] += 1
+        if label == prediction:
+            total_correct += 1
+            correct_predictions[label] += 1
+
+    return {
+        "total_correct": total_correct,
+        "total_items": total_items,
+        "gender_category_counts": gender_category_counts,
+        "correct_predictions": correct_predictions,
+    }
+
+
+def get_accuracy_gnnllm(batch_labels, logits, target_mask, tokenizer, task='yes_no'):
     predictions = torch.argmax(logits, dim=-1)
     predictions = predictions[target_mask == 1]
     labels = batch_labels[target_mask == 1]
     predicted_tokens = tokenizer.convert_ids_to_tokens(predictions)
     target_tokens = tokenizer.convert_ids_to_tokens(labels)
-    res = yes_no_accuracy(target_tokens, predicted_tokens)
-    return res
+    if task == 'yes_no':
+        return yes_no_accuracy(target_tokens, predicted_tokens)
+    elif task == 'age':
+        return age_accuracy(target_tokens, predicted_tokens)
+    elif task == 'gender':
+        return gender_accuracy(target_tokens, predicted_tokens)
+    else:
+        raise ValueError(f"Task {task} not supported")
 
 
 def get_accuracy_gnn_binary_task(probs, labels):
