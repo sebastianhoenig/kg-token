@@ -61,8 +61,12 @@ def log_test_to_wandb(res):
 def log_age_downstream_task_to_wandb(res):
     total_correct = res['total_correct']
     total_items = res['total_items']
-    age_category_counts = res['age_category_counts']
-    correct_predictions = res['correct_predictions']
+    young_category = res['young_category']
+    adult_category = res['adult_category']
+    old_category = res['old_category']
+    correct_young = res['correct_young']
+    correct_adult = res['correct_adult']
+    correct_old = res['correct_old']
 
     accuracy = total_correct/total_items if total_items > 0 else 0
 
@@ -70,8 +74,12 @@ def log_age_downstream_task_to_wandb(res):
         ["accuracy", accuracy],
         ["total_correct", total_correct],
         ["total_items", total_items],
-        ["age_category_counts", age_category_counts],
-        ["correct_predictions", correct_predictions],
+        ["young_category", young_category],
+        ["adult_category", adult_category],
+        ["old_category", old_category],
+        ["correct_young", correct_young],
+        ["correct_adult", correct_adult],
+        ["correct_old", correct_old],
     ]
 
     table = wandb.Table(columns=["Metric", "Value"], data=data)
@@ -80,10 +88,20 @@ def log_age_downstream_task_to_wandb(res):
 
 
 def log_gender_downstream_task_to_wandb(res):
+    """
+            "total_correct": total_correct,
+        "total_items": total_items,
+        "male_category": gender_category_counts["Male"],
+        "female_category": gender_category_counts["Female"],
+        "correct_male": correct_predictions["Male"],
+        "correct_female": correct_predictions["Female"]
+    """
     total_correct = res['total_correct']
     total_items = res['total_items']
-    gender_category_counts = res['gender_category_counts']
-    correct_predictions = res['correct_predictions']
+    male_category = res['male_category']
+    female_category = res['female_category']
+    correct_male = res['correct_male']
+    correct_female = res['correct_female']
 
     accuracy = total_correct/total_items if total_items > 0 else 0
 
@@ -91,8 +109,10 @@ def log_gender_downstream_task_to_wandb(res):
         ["accuracy", accuracy],
         ["total_correct", total_correct],
         ["total_items", total_items],
-        ["gender_category_counts", gender_category_counts],
-        ["correct_predictions", correct_predictions],
+        ["male_category", male_category],
+        ["female_category", female_category],
+        ["correct_male", correct_male],
+        ["correct_female", correct_female]
     ]
 
     table = wandb.Table(columns=["Metric", "Value"], data=data)

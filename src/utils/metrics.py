@@ -80,7 +80,13 @@ def age_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mapping[
     for label, prediction in zip(targets, predictions):
         total_items += 1
         age_category_counts[label] += 1
-        if label == prediction:
+        if label == "Young" and "young" in prediction.lower():
+            total_correct += 1
+            correct_predictions[label] += 1
+        elif label == "Adult" and "adult" in prediction.lower():
+            total_correct += 1
+            correct_predictions[label] += 1
+        elif label == "Old" and "old" in prediction.lower():
             total_correct += 1
             correct_predictions[label] += 1
 
@@ -104,7 +110,10 @@ def gender_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
     for label, prediction in zip(targets, predictions):
         total_items += 1
         gender_category_counts[label] += 1
-        if label == prediction:
+        if label == "Male" and "male" in prediction.lower():
+            total_correct += 1
+            correct_predictions[label] += 1
+        elif label == "Female" and "female" in prediction.lower():
             total_correct += 1
             correct_predictions[label] += 1
 
