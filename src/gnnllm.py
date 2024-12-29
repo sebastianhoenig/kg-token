@@ -241,7 +241,7 @@ def evaluate_gender(config: Any):
             total_correct += batch_res['total_correct']
             total_items += batch_res['total_items']
             for key in gender_category_counts:
-                gender_category_counts[key] += batch_res['age_category_counts'][key]
+                gender_category_counts[key] += batch_res['gender_category_counts'][key]
                 correct_predictions[key] += batch_res['correct_predictions'][key]
 
     aggregated_res = {
