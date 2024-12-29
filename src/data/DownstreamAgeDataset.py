@@ -20,7 +20,7 @@ class AgeDataset(Dataset):
         for ind, age in enumerate(labels):
             label = "Young" if age < 35 else "Adult" if age < 50 else "Old"
             qa_dict[ind] = {
-                "question": f"""Estimate the age of one of the users in the Movielens dataset, based on the following representation: {self.config.USER_EMB}. Answer strictly with Young, Adult, or Old. No additional words, punctuation, or formatting.\nAnswer: """,
+                "question": f"""Estimate the age of one of the users based on the following representation: {self.config.USER_EMB}. Answer strictly with Young, Adult, or Old. No additional words, punctuation, or formatting.\nAnswer: """,
                 "answer": label,
                 "user_id": ind,
             }
