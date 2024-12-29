@@ -7,7 +7,7 @@ from tqdm.notebook import tqdm
 from src.utils.logging import log_train_to_wandb
 from src.utils.seed import apply_seed
 from src.models.gnn_llm import GraphTokenGPT
-from src.utils.metrics import get_accuracy_gnnllm, yes_no_accuracy
+from src.utils.metrics import get_accuracy_gnnllm
 from src.graph.Movielens100k import MovieLens
 from src.data.Dataset import GraphQADataset
 from src.utils.logging import log_test_to_wandb
