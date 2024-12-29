@@ -200,8 +200,12 @@ def evaluate_age(config: Any):
     aggregated_res = {
         "total_correct": total_correct,
         "total_items": total_items,
-        "age_category_counts": json.dumps(age_category_counts, indent=4),
-        "correct_predictions": json.dumps(correct_predictions, indent=4),
+        "young_category": age_category_counts['Young'],
+        "adult_category": age_category_counts['Adult'],
+        "old_category": age_category_counts['Old'],
+        "correct_young": correct_predictions['Young'],
+        "correct_adult": correct_predictions['Adult'],
+        "correct_old": correct_predictions['Old'],
     }
 
     log_age_downstream_task_to_wandb(aggregated_res)
@@ -243,8 +247,10 @@ def evaluate_gender(config: Any):
     aggregated_res = {
         "total_correct": total_correct,
         "total_items": total_items,
-        "gender_category_counts": json.dumps(gender_category_counts, indent=4),
-        "correct_predictions": json.dumps(correct_predictions, indent=4),
+        "male_category": gender_category_counts["Male"],
+        "female_category": gender_category_counts["Female"],
+        "correct_male": correct_predictions["Male"],
+        "correct_female": correct_predictions["Female"]
     }
 
     log_gender_downstream_task_to_wandb(aggregated_res)

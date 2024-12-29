@@ -70,6 +70,8 @@ def yes_no_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
 
 
 def age_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mapping[str, float]:
+    print(targets)
+    print(predictions)
     total_correct = 0
     total_items = 0
     age_category_counts = {"Young": 0, "Adult": 0, "Old": 0}
