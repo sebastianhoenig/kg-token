@@ -18,7 +18,7 @@ class GenderDataset(Dataset):
         for ind, gender in enumerate(labels):
             label = "Male" if gender == "M" else "Female"
             qa_dict[ind] = {
-                "question": f"""Question: Is the user {self.config.USER_EMB} "Male" or "Female"? Answer strictly with one of the following: Male or Female. No additional words, punctuation, or formatting. \nAnswer: """,
+                "question": f"""Estimate the gender of the user in the Movielens dataset, based on the following representation of him: {self.config.USER_EMB}. Answer strictly with Male or Female. No additional words, punctuation, or formatting.\nAnswer: """,
                 "answer": label,
                 "user_id": ind,
             }
