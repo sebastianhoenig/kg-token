@@ -98,9 +98,9 @@ class MovieLens:
 
         user_encoders = {}
         if "occupation" in self.args.user_feats:
-            user_encoders["occupation"] = LabelEncodedColumn()#OneHotColumn(device=self.device)
+            user_encoders["occupation"] = OneHotColumn(device=self.device)#LabelEncodedColumn()#
         if "gender" in self.args.user_feats:
-            user_encoders["gender"] = LabelEncodedColumn()#OneHotColumn(device=self.device)
+            user_encoders["gender"] = OneHotColumn(device=self.device)#LabelEncodedColumn()#
         if "age" in self.args.user_feats:
             user_encoders["age"] = NumericalColumn()
 
