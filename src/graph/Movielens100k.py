@@ -113,7 +113,7 @@ class MovieLens:
         dst_node["movie"] = self.load_node_csv(
             df=movies,
             encoders={
-                #"movie_title": TokenEmbedding(device=self.device),
+                "movie_title": TokenEmbedding(device=self.device),
                 "genres": GenresColumn(movies[self.genres])
             },
         )
@@ -150,7 +150,7 @@ class MovieLens:
             #data_train["user"].x = torch.cat([data_train["user"].x, torch.eye(data_train["user"].num_nodes, device=self.device)], dim=1)
         """
         data_train["user"].x = torch.eye(data_train["user"].num_nodes, device=self.device)
-        data_train["movie"].x = torch.eye(data_train["movie"].num_nodes, device=self.device)
+        #data_train["movie"].x = torch.eye(data_train["movie"].num_nodes, device=self.device)
         del data_train["user"].num_nodes
 
         data_train["user"].gender = users["gender"].values
