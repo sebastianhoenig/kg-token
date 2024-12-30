@@ -31,8 +31,9 @@ class GraphTokenLLM(nn.Module):
         if args.use_pretrained_gnn:
             pretrained_weights = torch.load(args.gnn_model_path, map_location=self.device)
             self.gnn.load_state_dict(pretrained_weights)
-            for param in self.gnn.parameters():
-                param.requires_grad = False
+            if args.freeze_pretrained_gnn:
+                for param in self.gnn.parameters():
+                    param.requires_grad = False
 
         for name, param in model.named_parameters():
             param.requires_grad = False
