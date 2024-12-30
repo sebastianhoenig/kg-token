@@ -110,7 +110,7 @@ def gender_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
     for label, prediction in zip(targets, predictions):
         total_items += 1
         gender_category_counts[label] += 1
-        if label == "Male" and "male" in prediction.lower():
+        if label == "Male" and "male" in prediction.lower() and "female" not in prediction.lower():
             total_correct += 1
             correct_predictions[label] += 1
         elif label == "Female" and "female" in prediction.lower():

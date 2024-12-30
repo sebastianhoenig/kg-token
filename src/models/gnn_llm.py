@@ -27,12 +27,19 @@ class GraphTokenLLM(nn.Module):
             num_heads=args.gnn_num_heads,
         ).to(self.device)
         self.gnn = to_hetero(gnn, metadata, aggr=args.gnn_aggr)
+
+        if args.use_pretrained_gnn:
+            pretrained_weights = torch.load(args.gnn_model_path, map_location=self.device)
+            self.gnn.load_state_dict(pretrained_weights)
+            for param in self.gnn.parameters():
+                param.requires_grad = False
+
         for name, param in model.named_parameters():
             param.requires_grad = False
 
         self.model = model
-        self.fc1 = nn.Linear(args.gnn_hidden_dim, args.llm_embedding_dim//2).to(self.device)
-        self.fc2 = nn.Linear(args.llm_embedding_dim//2, args.llm_embedding_dim).to(self.device)
+        self.fc1 = nn.Linear(args.gnn_hidden_dim, args.llm_embedding_dim).to(self.device)
+        #self.fc2 = nn.Linear(args.llm_embedding_dim//2, args.llm_embedding_dim).to(self.device)
         special_tokens_dict = {'additional_special_tokens': [args.USER_EMB, args.MOVIE_EMB]}
         self.tokenizer.add_special_tokens(special_tokens_dict)
         self.model.resize_token_embeddings(len(self.tokenizer))
@@ -97,8 +104,11 @@ class GraphTokenLLM(nn.Module):
 
         graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
 
-        user_embeds = self.fc2(F.relu(self.fc1(graph_embeds['user'])))
-        movie_embeds = self.fc2(F.relu(self.fc1(graph_embeds['movie'])))
+        #user_embeds = self.fc2(F.relu(self.fc1(graph_embeds['user'])))
+        #movie_embeds = self.fc2(F.relu(self.fc1(graph_embeds['movie'])))
+
+        user_embeds = self.fc1(graph_embeds['user'])
+        movie_embeds = self.fc1(graph_embeds['movie'])
 
         for i, (user_id, movie_id) in enumerate(zip(user_ids, movie_ids)):
             movie_embedding = movie_embeds[movie_id].to(self.device)
@@ -185,8 +195,11 @@ class GraphTokenLLM(nn.Module):
 
         graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
 
-        user_embeds = self.fc2(self.fc1(graph_embeds['user']))
-        movie_embeds = self.fc2(self.fc1(graph_embeds['movie']))
+        # user_embeds = self.fc2(F.relu(self.fc1(graph_embeds['user'])))
+        # movie_embeds = self.fc2(F.relu(self.fc1(graph_embeds['movie'])))
+
+        user_embeds = self.fc1(graph_embeds['user'])
+        movie_embeds = self.fc1(graph_embeds['movie'])
 
         for i, (user_id, movie_id) in enumerate(zip(user_ids, movie_ids)):
             movie_embedding = movie_embeds[movie_id].to(self.device)
@@ -264,7 +277,9 @@ class GraphTokenLLM(nn.Module):
 
         graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
 
-        user_embeds = self.fc2(self.fc1(graph_embeds['user']))
+        #user_embeds = self.fc2(self.fc1(graph_embeds['user']))
+
+        user_embeds = self.fc1(graph_embeds['user'])
 
         for i, user_id in enumerate(user_ids):
             user_embedding = user_embeds[user_id].to(self.device)
