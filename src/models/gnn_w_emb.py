@@ -58,7 +58,10 @@ class GNNEmbPipeline(nn.Module):
         return logits, loss, edge_labels.float()
 
     def inference(self, graph):
-        graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
+        x_dict = graph.x_dict
+        x_dict['user'] = torch.cat([x_dict['user'][:, 1:], self.user_embedding(x_dict['user'][:, 0].long())], dim=1)
+
+        graph_embeds = self.gnn(x_dict, graph.edge_index_dict)
 
         edge_index = graph.edge_index_dict['user', 'likes', 'movie']
 
