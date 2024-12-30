@@ -9,7 +9,7 @@ import wandb
 
 
 def train_gnn(config: Any):
-    wandb.init(project="gnn-only", name=f"3dim-{config.gnn_model}-{config.gnn_hidden_dim}-{config.gnn_num_layers}-{config.gnn_dropout}-{config.gnn_aggr}", config=config)
+    wandb.init(project={config.project_name}, name=f"3dim-{config.gnn_model}-{config.gnn_hidden_dim}-{config.gnn_num_layers}-{config.gnn_dropout}-{config.gnn_aggr}", config=config)
     apply_seed(0)
 
     movielens = MovieLens(config)
