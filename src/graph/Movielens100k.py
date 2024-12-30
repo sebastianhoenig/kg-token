@@ -98,9 +98,9 @@ class MovieLens:
 
         user_encoders = {}
         if "occupation" in self.args.user_feats:
-            user_encoders["occupation"] = OneHotColumn(device=self.device)#LabelEncodedColumn()#
+            user_encoders["occupation"] = OneHotColumn()#LabelEncodedColumn()#
         if "gender" in self.args.user_feats:
-            user_encoders["gender"] = OneHotColumn(device=self.device)#LabelEncodedColumn()#
+            user_encoders["gender"] = OneHotColumn()#LabelEncodedColumn()#
         if "age" in self.args.user_feats:
             user_encoders["age"] = NumericalColumn()
 
@@ -198,11 +198,9 @@ class NumericalColumn:
 
 
 class OneHotColumn:
-    def __init__(self, device):
-        self.device = device
 
     def __call__(self, df) -> torch.Tensor:
-        return torch.tensor(pd.get_dummies(df).values, dtype=torch.float32, device=self.device)
+        return torch.tensor(pd.get_dummies(df).values, dtype=torch.float32)
 
 
 class TokenEmbedding:
