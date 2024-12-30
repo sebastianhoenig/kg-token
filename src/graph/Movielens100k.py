@@ -98,9 +98,9 @@ class MovieLens:
 
         user_encoders = {}
         if "occupation" in self.args.user_feats:
-            user_encoders["occupation"] = OneHotColumn()#LabelEncodedColumn()#
+            user_encoders["occupation"] = LabelEncodedColumn()#OneHotColumn()#LabelEncodedColumn()#
         if "gender" in self.args.user_feats:
-            user_encoders["gender"] = OneHotColumn()#LabelEncodedColumn()#
+            user_encoders["gender"] = LabelEncodedColumn()#OneHotColumn()#LabelEncodedColumn()#
         if "age" in self.args.user_feats:
             user_encoders["age"] = NumericalColumn()
 
@@ -149,9 +149,9 @@ class MovieLens:
             data_train["user"].x = data_train["user"].x
             #data_train["user"].x = torch.cat([data_train["user"].x, torch.eye(data_train["user"].num_nodes, device=self.device)], dim=1)
         """
-        existing_user_features = data_train["user"].x
-        unique_index = torch.arange(data_train["user"].num_nodes).unsqueeze(1)
-        data_train["user"].x = torch.cat([unique_index, existing_user_features], dim=1)#torch.eye(data_train["user"].num_nodes, device=self.device)
+        #existing_user_features = data_train["user"].x
+        #unique_index = torch.arange(data_train["user"].num_nodes).unsqueeze(1)
+        #data_train["user"].x = torch.cat([unique_index, existing_user_features], dim=1)#torch.eye(data_train["user"].num_nodes, device=self.device)
         #data_train["movie"].x = torch.eye(data_train["movie"].num_nodes, device=self.device)
         del data_train["user"].num_nodes
 
@@ -176,9 +176,9 @@ class MovieLens:
             data_test["user"].x = data_test["user"].x
             #data_test["user"].x = torch.cat([data_test["user"].x, torch.eye(data_test["user"].num_nodes, device=self.device)], dim=1)
         """
-        existing_user_features = data_test["user"].x
-        unique_index = torch.arange(data_test["user"].num_nodes).unsqueeze(1)
-        data_test["user"].x = torch.cat([unique_index, existing_user_features], dim=1)#torch.eye(data_test["user"].num_nodes, device=self.device)
+        #existing_user_features = data_test["user"].x
+        #unique_index = torch.arange(data_test["user"].num_nodes).unsqueeze(1)
+        #data_test["user"].x = torch.cat([unique_index, existing_user_features], dim=1)#torch.eye(data_test["user"].num_nodes, device=self.device)
         #data_test["movie"].x = torch.eye(data_test["movie"].num_nodes, device=self.device)
         del data_test["user"].num_nodes
 

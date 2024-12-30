@@ -25,7 +25,7 @@ class GNNEmbPipeline(nn.Module):
     def forward(self, graph):
         # Extract graph embeddings using the GNN
         x_dict = graph.x_dict
-        x_dict['user'] = torch.cat([x_dict['user'][:, 1:], self.user_embedding(x_dict['user'][:, 0].long())], dim=1)
+        x_dict['user'] = self.user_embedding(x_dict['user'][:, 0].long())#torch.cat([x_dict['user'][:, 1:], self.user_embedding(x_dict['user'][:, 0].long())], dim=1)
 
         graph_embeds = self.gnn(x_dict, graph.edge_index_dict)
 
@@ -59,7 +59,7 @@ class GNNEmbPipeline(nn.Module):
 
     def inference(self, graph):
         x_dict = graph.x_dict
-        x_dict['user'] = torch.cat([x_dict['user'][:, 1:], self.user_embedding(x_dict['user'][:, 0].long())], dim=1)
+        x_dict['user'] = self.user_embedding(x_dict['user'][:, 0].long())#torch.cat([x_dict['user'][:, 1:], self.user_embedding(x_dict['user'][:, 0].long())], dim=1)
 
         graph_embeds = self.gnn(x_dict, graph.edge_index_dict)
 
