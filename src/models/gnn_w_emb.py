@@ -16,7 +16,7 @@ class GNNEmbPipeline(nn.Module):
             use_bn=args.gnn_use_bn,
             num_heads=args.gnn_num_heads,
         ).to(self.device)
-        self.user_embedding = nn.Embedding(data['user'].num_nodes, 256).to(self.device)
+        self.user_embedding = nn.Embedding(data['user'].num_nodes, 32).to(self.device)
         self.gnn = to_hetero(gnn, data.metadata(), aggr=args.gnn_aggr)
         self.fc1 = nn.Linear(args.gnn_hidden_dim * 2, args.gnn_hidden_dim).to(self.device)  # *2 because of concatenation
         self.fc2 = nn.Linear(args.gnn_hidden_dim, 1).to(self.device)
@@ -27,7 +27,7 @@ class GNNEmbPipeline(nn.Module):
         x_dict = graph.x_dict
         x_dict['user'] = torch.cat([x_dict['user'][:, 1:], self.user_embedding(x_dict['user'][:, 0].long())], dim=1)
 
-        graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
+        graph_embeds = self.gnn(x_dict, graph.edge_index_dict)
 
         # Edge index and labels for training
         edge_index = graph.edge_index_dict['user', 'likes', 'movie']
