@@ -4,7 +4,7 @@ from src.models.gnn_encoders import load_gnn_model
 from torch_geometric.nn import to_hetero
 
 
-class GNNPipeline(nn.Module):
+class GNNEmbPipeline(nn.Module):
     def __init__(self, args, data):
         super().__init__()
         self.device = args.device
@@ -16,13 +16,17 @@ class GNNPipeline(nn.Module):
             use_bn=args.gnn_use_bn,
             num_heads=args.gnn_num_heads,
         ).to(self.device)
-        self.gnn = to_hetero(gnn, data.metadata, aggr=args.gnn_aggr)
+        self.user_embedding = nn.Embedding(data['user'].num_nodes, 32).to(self.device)
+        self.gnn = to_hetero(gnn, data.metadata(), aggr=args.gnn_aggr)
         self.fc1 = nn.Linear(args.gnn_hidden_dim * 2, args.gnn_hidden_dim).to(self.device)  # *2 because of concatenation
         self.fc2 = nn.Linear(args.gnn_hidden_dim, 1).to(self.device)
         self.args = args
 
     def forward(self, graph):
         # Extract graph embeddings using the GNN
+        x_dict = graph.x_dict
+        x_dict['user'] = torch.cat([x_dict['user'][:, 1:], self.user_embedding(x_dict['user'][:, 0].long())], dim=1)
+
         graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
 
         # Edge index and labels for training

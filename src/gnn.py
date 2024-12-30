@@ -2,6 +2,7 @@ from typing import Any
 import torch
 from src.utils.seed import apply_seed
 from src.models.gnn import GNNPipeline
+from src.models.gnn_w_emb import GNNEmbPipeline
 from src.utils.metrics import get_accuracy_gnn_binary_task, get_rmse_gnn_regression_task
 from src.graph.Movielens100k import MovieLens
 from tqdm import tqdm
@@ -21,7 +22,7 @@ def train_gnn(config: Any):
     graph = movielens.train
     graph = graph.to(device)
 
-    gnn = GNNPipeline(config, movielens.train.metadata())
+    gnn = GNNEmbPipeline(config, movielens.train)
 
     optimizer = torch.optim.AdamW(gnn.parameters(), lr=config.lr)
 
