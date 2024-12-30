@@ -113,7 +113,7 @@ class MovieLens:
         dst_node["movie"] = self.load_node_csv(
             df=movies,
             encoders={
-                "movie_title": TokenEmbedding(device=self.device),
+                #"movie_title": TokenEmbedding(device=self.device),
                 "genres": GenresColumn(movies[self.genres])
             },
         )
