@@ -5,9 +5,11 @@ from src.models.gnn import GNNPipeline
 from src.utils.metrics import get_accuracy_gnn_binary_task, get_rmse_gnn_regression_task
 from src.graph.Movielens100k import MovieLens
 from tqdm import tqdm
+import wandb
 
 
 def train_gnn(config: Any):
+    wandb.init(project="gnn-only", name=f"3dim-{config.gnn_model}-{config.gnn_hidden_dim}-{config.gnn_num_layers}-{config.gnn_dropout}-{config.gnn_aggr}", config=config)
     apply_seed(0)
 
     movielens = MovieLens(config)
@@ -28,7 +30,11 @@ def train_gnn(config: Any):
         total_loss = 0
 
         probs, loss, labels = gnn(graph)
-        #print(get_accuracy_gnn_binary_task(probs, labels)['acc'])
+        acc = get_accuracy_gnn_binary_task(probs, labels)['acc']
+
+        wandb.log({"loss": loss}, step=epoch)
+        wandb.log({"accuracy": acc}, step=epoch)
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -50,8 +56,11 @@ def train_gnn(config: Any):
     else:
         test_acc = get_rmse_gnn_regression_task(probs, labels)['rmse']
 
-    print(test_acc)
+    wandb.log({"test-accuracy": test_acc}, step=epoch)
 
     # save gnn
-    torch.save(gnn.state_dict(), 'pretrained-gnn.pt')
+    #torch.save(gnn.state_dict(), 'pretrained-gnn.pt')
+
+    wandb.finish()
+
     return total_loss, train_acc, test_acc

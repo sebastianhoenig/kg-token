@@ -4,6 +4,7 @@ from sentence_transformers import SentenceTransformer
 from torch_geometric.data import HeteroData
 from torch_geometric.transforms import ToUndirected
 from typing import Any, Dict, Optional
+from sklearn.preprocessing import LabelEncoder
 
 
 class MovieLens:
@@ -97,9 +98,9 @@ class MovieLens:
 
         user_encoders = {}
         if "occupation" in self.args.user_feats:
-            user_encoders["occupation"] = OneHotColumn(device=self.device)
+            user_encoders["occupation"] = LabelEncodedColumn()#OneHotColumn(device=self.device)
         if "gender" in self.args.user_feats:
-            user_encoders["gender"] = OneHotColumn(device=self.device)
+            user_encoders["gender"] = LabelEncodedColumn()#OneHotColumn(device=self.device)
         if "age" in self.args.user_feats:
             user_encoders["age"] = NumericalColumn()
 
@@ -145,7 +146,8 @@ class MovieLens:
         if "x" not in data_train["user"]:
             data_train["user"].x = torch.eye(data_train["user"].num_nodes, device=self.device)
         else:
-            data_train["user"].x = torch.cat([data_train["user"].x, torch.eye(data_train["user"].num_nodes, device=self.device)], dim=1)
+            data_train["user"].x = data_train["user"].x
+            #data_train["user"].x = torch.cat([data_train["user"].x, torch.eye(data_train["user"].num_nodes, device=self.device)], dim=1)
 
         del data_train["user"].num_nodes
 
@@ -166,7 +168,8 @@ class MovieLens:
         if "x" not in data_test["user"]:
             data_test["user"].x = torch.eye(data_test["user"].num_nodes, device=self.device)
         else:
-            data_test["user"].x = torch.cat([data_test["user"].x, torch.eye(data_test["user"].num_nodes, device=self.device)], dim=1)
+            data_test["user"].x = data_test["user"].x
+            #data_test["user"].x = torch.cat([data_test["user"].x, torch.eye(data_test["user"].num_nodes, device=self.device)], dim=1)
 
         del data_test["user"].num_nodes
 
@@ -217,4 +220,11 @@ class TokenEmbedding:
         )
         return x.cpu()
 
+
+class LabelEncodedColumn:
+    def __init__(self):
+        self.encoder = LabelEncoder()
+
+    def __call__(self, df):
+        return torch.tensor(self.encoder.fit_transform(df).reshape(-1, 1), dtype=torch.float32)
 
