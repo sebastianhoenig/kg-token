@@ -113,7 +113,7 @@ class MovieLens:
         dst_node["movie"] = self.load_node_csv(
             df=movies,
             encoders={
-                #"movie_title": TokenEmbedding(device=self.device),
+                "movie_title": TokenEmbedding(device=self.device),
                 "genres": GenresColumn(movies[self.genres])
             },
         )
@@ -155,6 +155,7 @@ class MovieLens:
 
         data_train["user"].gender = users["gender"].values
         data_train["user"].age = users["age"].values
+        data_train["user"].occupation = users["occupation"].values
 
         data_test = HeteroData()
         data_test = self.assign_node_property(
@@ -179,6 +180,7 @@ class MovieLens:
 
         data_test["user"].gender = users["gender"].values
         data_test["user"].age = users["age"].values
+        data_test["user"].occupation = users["occupation"].values
 
         # Convert to undirected and finalize
         self.train = ToUndirected()(data_train).to(self.device)

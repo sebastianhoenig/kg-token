@@ -20,7 +20,7 @@ from src.data.DownstreamGenderDataset import GenderDataset
 def train_gnnllm(config: Any):
     apply_seed(0)
 
-    wandb.init(project="kg-token", name=config.name, config=config)
+    wandb.init(project=config.project_name, name=config.name, config=config)
 
     movielens = MovieLens(config)
     movielens.create_graph()
