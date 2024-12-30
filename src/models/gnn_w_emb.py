@@ -16,7 +16,7 @@ class GNNEmbPipeline(nn.Module):
             use_bn=args.gnn_use_bn,
             num_heads=args.gnn_num_heads,
         ).to(self.device)
-        self.user_embedding = nn.Embedding(data['user'].num_nodes, 32).to(self.device)
+        self.user_embedding = nn.Embedding(data['user'].num_nodes, 256).to(self.device)
         self.gnn = to_hetero(gnn, data.metadata(), aggr=args.gnn_aggr)
         self.fc1 = nn.Linear(args.gnn_hidden_dim * 2, args.gnn_hidden_dim).to(self.device)  # *2 because of concatenation
         self.fc2 = nn.Linear(args.gnn_hidden_dim, 1).to(self.device)
