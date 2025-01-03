@@ -20,20 +20,14 @@ class AgeDataset(Dataset):
 
         few_shot_examples = []
         for i in range(self.config.num_few_shot):
-            few_shot_examples.append(f"User representation: {self.config.SPECIAL_TOKENS[i+2]}. Age category: {get_label(labels[i])}")
+            few_shot_examples.append(f"Question: Is the user {self.config.SPECIAL_TOKENS[i+2]} Young, Adult or Old?.\nAnswer: {get_label(labels[i])}")
 
-        few_shot_prompt = "\n".join(few_shot_examples)
-
-        few_shot_prompt += "\nNow consider the following user representation"
+        few_shot_prompt = "\n\n".join(few_shot_examples)
 
         for ind, age in enumerate(labels):
             label = get_label(age)
             qa_dict[ind] = {
-                "question": f"""The following examples demonstrate how to categorize user ages based on their representations:
-                {few_shot_prompt}
-                User representation: {self.config.USER_EMB}
-                Answer strictly with Young, Adult, or Old. No additional words, punctuation, or formatting.
-                Answer: """,
+                "question": f"""{few_shot_prompt}\n\n Question: Is the user {self.config.USER_EMB} Young, Adult or Old?\nAnswer: """,
                 "answer": label,
                 "user_id": ind,
             }

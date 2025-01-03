@@ -263,7 +263,6 @@ class GraphTokenLLM(nn.Module):
             target_mask[len(query_tokens) + 1] = 1  # Focus target on the answer part
             orig_len = len(query_tokens) + len(answer_tokens) + 1
             max_tokens = orig_len + 5
-            print(max_tokens)
             input_token = np.pad(input_token, [[0, max_tokens - orig_len - 1]], constant_values=PAD_TOKEN)
             target_mask = np.pad(target_mask, [[0, max_tokens - orig_len - 1]], constant_values=0)
             attention_mask = np.ones_like(input_token)
