@@ -41,7 +41,7 @@ class GraphTokenLLM(nn.Module):
         self.model = model
         self.fc1 = nn.Linear(args.gnn_hidden_dim, args.llm_embedding_dim).to(self.device)
         #self.fc2 = nn.Linear(args.llm_embedding_dim//2, args.llm_embedding_dim).to(self.device)
-        special_tokens_dict = {'additional_special_tokens': [args.USER_EMB, args.MOVIE_EMB]}
+        special_tokens_dict = {'additional_special_tokens': args.SPECIAL_TOKENS}#[args.USER_EMB, args.MOVIE_EMB]}
         self.tokenizer.add_special_tokens(special_tokens_dict)
         self.model.resize_token_embeddings(len(self.tokenizer))
 
@@ -240,6 +240,12 @@ class GraphTokenLLM(nn.Module):
 
         return logits, batch_labels, target_masks
 
+    def add_few_shot_tokens(self, modified_embs, user_embeds):
+        for i, token in enumerate(self.args.SPECIAL_TOKENS[2:]):
+            token_id = self.tokenizer.convert_tokens_to_ids(token)
+            modified_embs[token_id] = user_embeds[i].to(self.device)
+        return modified_embs
+
     def inference_downstream(self, batch, graph):
         attention_masks = []
         user_ids = []
@@ -252,11 +258,12 @@ class GraphTokenLLM(nn.Module):
             BOS_TOKEN = self.tokenizer.bos_token_id
             EOS_TOKEN = self.tokenizer.eos_token_id
             PAD_TOKEN = self.tokenizer.pad_token_id
-            max_tokens = 65
             input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             target_mask = np.zeros_like(input_token)
             target_mask[len(query_tokens) + 1] = 1  # Focus target on the answer part
             orig_len = len(query_tokens) + len(answer_tokens) + 1
+            max_tokens = orig_len + 5
+            print(max_tokens)
             input_token = np.pad(input_token, [[0, max_tokens - orig_len - 1]], constant_values=PAD_TOKEN)
             target_mask = np.pad(target_mask, [[0, max_tokens - orig_len - 1]], constant_values=0)
             attention_mask = np.ones_like(input_token)
@@ -290,6 +297,8 @@ class GraphTokenLLM(nn.Module):
             # Create a modified embedding matrix
             modified_embs = self.embedding_layer.weight.clone()
             modified_embs[user_token_id] = user_embedding
+
+            modified_embs = self.add_few_shot_tokens(modified_embs, user_embeds)
 
             # Embed input tokens using the modified embeddings
             input_embeddings = F.embedding(input_tokens[i], modified_embs)

@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 
 # Good prompt for no-nonsense answers
 # Question: Is the user {self.config.USER_EMB} "Young", "Adult" or "Old"? Answer strictly with one of the following: Young, Adult, or Old. No additional words, punctuation, or formatting.\nAnswer:
+#f"""Estimate the age of one of the users based on the following representation: {self.config.USER_EMB}. Answer strictly with Young, Adult, or Old. No additional words, punctuation, or formatting.\nAnswer: """,
 class AgeDataset(Dataset):
     def __init__(self, graph: HeteroData, config):
         super().__init__()
@@ -17,10 +18,22 @@ class AgeDataset(Dataset):
 
         labels = self.graph["user"].age
 
+        few_shot_examples = []
+        for i in range(self.config.num_few_shot):
+            few_shot_examples.append(f"User representation: {self.config.SPECIAL_TOKENS[i+2]}. Age category: {get_label(labels[i])}")
+
+        few_shot_prompt = "\n".join(few_shot_examples)
+
+        few_shot_prompt += "\nNow consider the following user representation"
+
         for ind, age in enumerate(labels):
-            label = "Young" if age < 35 else "Adult" if age < 50 else "Old"
+            label = get_label(age)
             qa_dict[ind] = {
-                "question": f"""Estimate the age of one of the users based on the following representation: {self.config.USER_EMB}. Answer strictly with Young, Adult, or Old. No additional words, punctuation, or formatting.\nAnswer: """,
+                "question": f"""The following examples demonstrate how to categorize user ages based on their representations:
+                {few_shot_prompt}
+                User representation: {self.config.USER_EMB}
+                Answer strictly with Young, Adult, or Old. No additional words, punctuation, or formatting.
+                Answer: """,
                 "answer": label,
                 "user_id": ind,
             }
@@ -32,3 +45,8 @@ class AgeDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.data[idx]
+
+
+def get_label(age):
+    label = "Young" if age < 35 else "Adult" if age < 50 else "Old"
+    return label
