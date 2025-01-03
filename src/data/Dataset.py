@@ -24,14 +24,7 @@ class GraphQADataset(Dataset):
 
         for ind, (user_idx, movie_idx) in enumerate(zip(*user_movie_edges)):
             qa_dict[ind] = {
-                "question": (
-                    f"Task: Predict if a user likes a movie.\n"
-                    f"User Representation: {self.config.USER_EMB}\n"
-                    f"Use Side Information: Occupation: {occupations[user_idx]}, Age: {ages[user_idx]}, Gender: {genders[user_idx]}\n"
-                    f"Movie Representation: {self.config.MOVIE_EMB}\n"
-                    f"Question: Does this user like this movie?\n"
-                    f"Answer (Yes/No): "
-                ),
+                "question": f"""Output only "Yes" or "No".\nQuestion: Does user {self.config.USER_EMB} like movie {self.config.MOVIE_EMB}?\nAnswer: """,
                 "answer": "Yes" if labels[ind] == 1 else "No",
                 "user_id": user_idx,
                 "movie_id": movie_idx,
