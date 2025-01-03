@@ -180,6 +180,7 @@ class MovieLens:
         #unique_index = torch.arange(data_test["user"].num_nodes).unsqueeze(1)
         #data_test["user"].x = torch.cat([unique_index, existing_user_features], dim=1)#torch.eye(data_test["user"].num_nodes, device=self.device)
         #data_test["movie"].x = torch.eye(data_test["movie"].num_nodes, device=self.device)
+        data_test["user"].x = torch.eye(data_test["user"].num_nodes, device=self.device)
         del data_test["user"].num_nodes
 
         data_test["user"].gender = users["gender"].values
