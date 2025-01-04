@@ -13,7 +13,7 @@ IGNORE_INDEX = -100
 
 class GraphTokenLLM(nn.Module):
     # Adapted from https://github.com/franciscoliu/graphprompter/tree/main
-    def __init__(self, args, metadata):
+    def __init__(self, args, data):
         super().__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(args.llm_model_path)
         model = AutoModelForCausalLM.from_pretrained(args.llm_model_path)
@@ -26,7 +26,7 @@ class GraphTokenLLM(nn.Module):
             use_bn=args.gnn_use_bn,
             num_heads=args.gnn_num_heads,
         ).to(self.device)
-        self.gnn = to_hetero(gnn, metadata, aggr=args.gnn_aggr)
+        self.gnn = to_hetero(gnn, data.metadata(), aggr=args.gnn_aggr)
 
         if args.use_pretrained_gnn:
             pretrained_weights = torch.load(args.gnn_model_path, map_location=self.device)
@@ -52,6 +52,10 @@ class GraphTokenLLM(nn.Module):
             self.embedding_layer = self.model.get_input_embeddings()
         else:
             self.embedding_layer = self.model.model.get_input_embeddings()
+
+        if args.embed_user_ids == True:
+            self.user_id_emb = nn.Embedding(data['user'].num_nodes, args.user_id_dim).to(self.device)
+
 
     def maybe_autocast(self, dtype=torch.float16):
         # If on CPU, don't use autocast
@@ -103,7 +107,10 @@ class GraphTokenLLM(nn.Module):
         batch_attention_masks = []
         batch_labels = []
 
-        graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
+        x_dict = graph.x_dict
+        if self.args.embed_user_ids == True:
+            x_dict['user'] = self.user_id_emb(x_dict['user'][:, 0].long())
+        graph_embeds = self.gnn(x_dict, graph.edge_index_dict)
 
         #user_embeds = self.fc2(F.relu(self.fc1(graph_embeds['user'])))
         #movie_embeds = self.fc2(F.relu(self.fc1(graph_embeds['movie'])))
@@ -194,7 +201,10 @@ class GraphTokenLLM(nn.Module):
         batch_attention_masks = []
         batch_labels = []
 
-        graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
+        x_dict = graph.x_dict
+        if self.args.embed_user_ids == True:
+            x_dict['user'] = self.user_id_emb(x_dict['user'][:, 0].long())
+        graph_embeds = self.gnn(x_dict, graph.edge_index_dict)
 
         # user_embeds = self.fc2(F.relu(self.fc1(graph_embeds['user'])))
         # movie_embeds = self.fc2(F.relu(self.fc1(graph_embeds['movie'])))
@@ -282,7 +292,10 @@ class GraphTokenLLM(nn.Module):
         batch_attention_masks = []
         batch_labels = []
 
-        graph_embeds = self.gnn(graph.x_dict, graph.edge_index_dict)
+        x_dict = graph.x_dict
+        if self.args.embed_user_ids == True:
+            x_dict['user'] = self.user_id_emb(x_dict['user'][:, 0].long())
+        graph_embeds = self.gnn(x_dict, graph.edge_index_dict)
 
         #user_embeds = self.fc2(self.fc1(graph_embeds['user']))
 

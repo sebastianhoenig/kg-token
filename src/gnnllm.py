@@ -36,7 +36,7 @@ def train_gnnllm(config: Any):
 
     example_ct = 0  # number of examples seen
 
-    gnn_llm = GraphTokenLLM(config, movielens.train.metadata())
+    gnn_llm = GraphTokenLLM(config, movielens.train)
 
     params = [p for _, p in gnn_llm.named_parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(
@@ -125,7 +125,7 @@ def evaluate(config: Any):
     graph = movielens.train
     graph = graph.to(device)
 
-    gnn_llm = GraphTokenLLM(config, movielens.test.metadata())
+    gnn_llm = GraphTokenLLM(config, movielens.test)
     gnn_llm = load_model(gnn_llm, config)
     # Set model to evaluation mode
     gnn_llm.eval()
@@ -168,7 +168,7 @@ def evaluate(config: Any):
 
 def evaluate_age(config: Any):
 
-    wandb.init(project="kg-token", name="Age-DS-Task", config=config)
+    wandb.init(project=config.project_name, name="AGE_DS_TASK", config=config)
 
     movielens = MovieLens(config)
     movielens.create_graph()
@@ -181,7 +181,7 @@ def evaluate_age(config: Any):
     test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
     device = config.device
 
-    gnn_llm = GraphTokenLLM(config, movielens.test.metadata())
+    gnn_llm = GraphTokenLLM(config, movielens.test)
     gnn_llm = load_model(gnn_llm, config)
     gnn_llm = gnn_llm.to(device)
     gnn_llm.eval()  # Set model to evaluation mode
@@ -215,7 +215,7 @@ def evaluate_age(config: Any):
 
 def evaluate_gender(config: Any):
 
-    wandb.init(project="kg-token", name="Gender-DS-Task", config=config)
+    wandb.init(project=config.project_name, name="Gender_DS_Task", config=config)
 
     movielens = MovieLens(config)
     movielens.create_graph()
@@ -228,7 +228,7 @@ def evaluate_gender(config: Any):
     test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
     device = config.device
 
-    gnn_llm = GraphTokenLLM(config, movielens.test.metadata())
+    gnn_llm = GraphTokenLLM(config, movielens.test)
     gnn_llm = load_model(gnn_llm, config)
     gnn_llm = gnn_llm.to(device)
     gnn_llm.eval()  # Set model to evaluation mode
