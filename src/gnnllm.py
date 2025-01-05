@@ -130,6 +130,10 @@ def train_gnnllm_node_classification(config: Any):
     dataset = NodeClassificationDataset(graph=movielens.train, config=config)
     loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=True)
 
+    val_dataset = NodeClassificationDataset(graph=movielens.train, config=config)
+    val_dataset.set_mode("val")
+    val_loader = DataLoader(val_dataset, batch_size=config.batch_size)
+
     gnn_llm = GraphTokenLLM(config, movielens.train)
 
     params = [p for _, p in gnn_llm.named_parameters() if p.requires_grad]
@@ -140,8 +144,8 @@ def train_gnnllm_node_classification(config: Any):
 
     for epoch in tqdm(range(config.num_epochs), desc="Epoch Progress"):
 
+        gnn_llm.train()
         total_loss = 0
-
         epoch_correct = 0
         epoch_items = 0
         epoch_correct_young = 0
@@ -160,15 +164,33 @@ def train_gnnllm_node_classification(config: Any):
 
             epoch_correct += res['total_correct']
             epoch_items += res['total_items']
-            epoch_correct_young += res['correct_young']
-            epoch_correct_adult += res['correct_adult']
-            epoch_correct_old += res['correct_old']
+            epoch_correct_young += res['correct_predictions']['Young']
+            epoch_correct_adult += res['correct_predictions']['Adult']
+            epoch_correct_old += res['correct_predictions']['Old']
 
             total_loss += loss.detach().item()
 
         avg_loss = total_loss / len(loader)
-        log_age_train_task_to_wandb(epoch_correct, epoch_items, epoch_correct_young, epoch_correct_adult, epoch_correct_old, epoch, loss)
-        print(f"Epoch {epoch + 1}/{config.num_epochs}, Loss: {avg_loss}")
+        log_age_train_task_to_wandb(epoch_correct, epoch_items, epoch_correct_young, epoch_correct_adult, epoch_correct_old, epoch, avg_loss)
+
+        #VAL
+        gnn_llm.eval()
+        val_correct, val_items = 0, 0
+
+        with torch.no_grad():
+            for batch in tqdm(val_loader, desc="Validation Progress", leave=False):
+                logits, _, batch_labels, target_mask = gnn_llm.forward_classification(batch, graph)
+
+                res = get_accuracy_gnnllm(batch_labels, logits, target_mask, gnn_llm.tokenizer, task='age')
+
+                val_correct += res['total_correct']
+                val_items += res['total_items']
+
+        val_accuracy = val_correct / val_items if val_items > 0 else 0
+        print(f"Validation Accuracy: {val_accuracy:.2%}")
+        wandb.log({
+            "val_accuracy": val_accuracy,
+        }, step=epoch)
 
     print("Evaluating on Test set")
     test_dataset = NodeClassificationDataset(graph=movielens.train, config=config)
