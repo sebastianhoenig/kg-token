@@ -87,6 +87,17 @@ def log_age_downstream_task_to_wandb(res):
     wandb.log({"age_evaluation_table": table})
 
 
+def log_age_train_task_to_wandb(total_correct, total_items, correct_young, correct_adult, correct_old, epoch, loss):
+    accuracy = total_correct/total_items if total_items > 0 else 0
+
+    wandb.log({"loss": loss}, step=epoch)
+    wandb.log({"accuracy": accuracy}, step=epoch)
+    wandb.log({"correct_young": correct_young}, step=epoch)
+    wandb.log({"correct_adult": correct_adult}, step=epoch)
+    wandb.log({"correct_old": correct_old}, step=epoch)
+
+
+
 def log_gender_downstream_task_to_wandb(res):
     """
             "total_correct": total_correct,

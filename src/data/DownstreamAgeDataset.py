@@ -44,5 +44,5 @@ class AgeDataset(Dataset):
 
 
 def get_label(age):
-    label = "Young" if age < 35 else "Adult" if age < 50 else "Old"
+    label = "Young" if age < 25 else "Adult" if age < 50 else "Old"
     return label
