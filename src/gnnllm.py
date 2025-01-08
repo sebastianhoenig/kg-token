@@ -347,7 +347,7 @@ def evaluate_preference(config: Any):
     movielens = MovieLens(config)
     movielens.create_graph()
 
-    user_movie_data = pd.read_csv("src/data/users_movies_pref_split.csv")
+    user_movie_data = pd.read_csv(config.user_pref_path)
     # Initialize dataset and dataloader
     test_dataset = GraphQAPreferenceDataset(graph=movielens.test, config=config, user_movie_data=user_movie_data)
     test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
