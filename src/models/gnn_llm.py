@@ -375,8 +375,6 @@ class GraphTokenLLM(nn.Module):
         user_ids = torch.tensor(user_ids).to(self.device)
         movie1_ids = torch.tensor(movie1_ids).to(self.device)
         movie2_ids = torch.tensor(movie2_ids).to(self.device)
-        movie1_embs = torch.tensor(movie1_embs).to(self.device)
-        movie2_embs = torch.tensor(movie2_embs).to(self.device)
         target_masks = torch.stack(target_masks).to(self.device)
         input_tokens = torch.stack(input_tokens).to(self.device)
 
