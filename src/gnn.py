@@ -60,7 +60,7 @@ def train_gnn(config: Any):
     wandb.log({"test-accuracy": test_acc}, step=epoch)
 
     # save gnn
-    #torch.save(gnn.state_dict(), 'pretrained-gnn.pt')
+    torch.save(gnn.state_dict(), 'gnn_emb.pt')
 
     wandb.finish()
 

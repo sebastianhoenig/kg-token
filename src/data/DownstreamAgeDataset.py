@@ -20,8 +20,8 @@ class AgeDataset(Dataset):
 
         few_shot_examples = []
         for i in range(self.config.num_few_shot):
-            if get_label(labels[i]) == "Young":
-                continue
+            #if get_label(labels[i]) == "Young":
+            #    continue
             few_shot_examples.append(f"Question: Is the user {self.config.SPECIAL_TOKENS[i+2]} Young, Adult or Old?.\nAnswer: {get_label(labels[i])}")
 
         few_shot_prompt = "\n\n".join(few_shot_examples)

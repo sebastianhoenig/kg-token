@@ -135,6 +135,8 @@ def get_accuracy_gnnllm(batch_labels, logits, target_mask, tokenizer, task='yes_
         return age_accuracy(target_tokens, predicted_tokens)
     elif task == 'gender':
         return gender_accuracy(target_tokens, predicted_tokens)
+    elif task == 'preference':
+        return yes_no_accuracy(target_tokens, predicted_tokens)
     else:
         raise ValueError(f"Task {task} not supported")
 

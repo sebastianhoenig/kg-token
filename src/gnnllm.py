@@ -11,6 +11,7 @@ from src.utils.metrics import get_accuracy_gnnllm
 from src.graph.Movielens100k import MovieLens
 from src.data.LinkPredictionDataset import GraphQADataset
 from src.data.NodeClassificationDataset import NodeClassificationDataset
+from src.data.DownstreamMoviePreference import GraphQAPreferenceDataset
 from src.utils.logging import log_test_to_wandb, log_age_downstream_task_to_wandb, log_gender_downstream_task_to_wandb, log_age_train_task_to_wandb
 from src.utils.checkpoints import save_model, load_model
 from src.data.DownstreamAgeDataset import AgeDataset
@@ -192,6 +193,8 @@ def train_gnnllm_node_classification(config: Any):
             "val_accuracy": val_accuracy,
         }, step=epoch)
 
+    save_model(gnn_llm, config)
+
     print("Evaluating on Test set")
     test_dataset = NodeClassificationDataset(graph=movielens.train, config=config)
     test_dataset.set_mode("test")
@@ -229,6 +232,8 @@ def train_gnnllm_node_classification(config: Any):
     log_age_downstream_task_to_wandb(aggregated_res)
 
     wandb.finish()
+
+
 
 
 def evaluate(config: Any):
@@ -329,6 +334,69 @@ def evaluate_age(config: Any):
     log_age_downstream_task_to_wandb(aggregated_res)
 
     wandb.finish()
+
+
+def evaluate_preference(config: Any):
+    import wandb
+    from torch.utils.data import DataLoader
+    from tqdm import tqdm
+    import torch
+
+    # Initialize logging
+    wandb.init(project=config.project_name, name="PREFERENCE_DS_TASK", config=config)
+
+    # Load graph data
+    movielens = MovieLens(config)
+    movielens.create_graph()
+
+    # Initialize dataset and dataloader
+    test_dataset = GraphQAPreferenceDataset(graph=movielens.test, config=config, user_movie_data="/Users/sebastian/University/Master/third term/sem-proj/kg-token/src/data/users_movies_pref_split.csv")
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
+    device = config.device
+
+    # Load and prepare the model
+    gnn_llm = GraphTokenLLM(config, movielens.test)
+    gnn_llm = load_model(gnn_llm, config)
+    gnn_llm = gnn_llm.to(device)
+    gnn_llm.eval()  # Set model to evaluation mode
+
+    total_correct_yes_preds, total_correct_no_preds = 0, 0
+    total_wrong_yes_preds, total_wrong_no_preds = 0, 0
+    total_yes_targets, total_no_targets = 0, 0
+    total_correct, total_items = 0, 0
+
+    with torch.no_grad():
+        for batch in tqdm(test_loader, desc="Evaluating"):
+            logits, batch_labels, target_masks = gnn_llm.inference_preference_downstream(batch, graph=movielens.test)
+
+            # Process results for preference
+            batch_res = get_accuracy_gnnllm(batch_labels, logits, target_masks, gnn_llm.tokenizer, task='preference')
+            total_correct_yes_preds += batch_res['num_correct_yes_preds']
+            total_correct_no_preds += batch_res['num_correct_no_preds']
+            total_wrong_yes_preds += batch_res['num_wrong_yes_preds']
+            total_wrong_no_preds += batch_res['num_wrong_no_preds']
+            total_yes_targets += batch_res['num_yes_targets']
+            total_no_targets += batch_res['num_no_targets']
+            total_correct += batch_res['num_correct']
+            total_items += batch_res['num_items']
+
+    aggregated_res = {
+        "num_correct": total_correct,
+        "num_correct_yes_preds": total_correct_yes_preds,
+        "num_correct_no_preds": total_correct_no_preds,
+        "num_wrong_yes_preds": total_wrong_yes_preds,
+        "num_wrong_no_preds": total_wrong_no_preds,
+        "num_yes_targets": total_yes_targets,
+        "num_no_targets": total_no_targets,
+        "num_items": total_items,
+    }
+
+    print(aggregated_res)
+
+    log_test_to_wandb(aggregated_res)
+
+    wandb.finish()
+
 
 
 def evaluate_gender(config: Any):
