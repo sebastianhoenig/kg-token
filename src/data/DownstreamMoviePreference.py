@@ -1,6 +1,7 @@
 from torch_geometric.data import HeteroData
 from typing import List, Dict, Union
 from torch.utils.data import Dataset
+import numpy as np
 
 
 class GraphQAPreferenceDataset(Dataset):
@@ -18,26 +19,38 @@ class GraphQAPreferenceDataset(Dataset):
 
         # Iterate through each user and construct movie pairs
         for user_idx, row in self.user_movie_data.iterrows():
-            user_id = row['user_id']
+            user_id = int(row['user_id'])
             gt_3_movies = eval(row['random_movies_gt_3'])
             lte_3_movies = eval(row['random_movies_lte_3'])
 
             # Generate 5 pairs for each user
-            for i, (movie_gt, movie_lte) in enumerate(zip(gt_3_movies, lte_3_movies)):
+            for i, (gt_movie, lt_movie) in enumerate(zip(gt_3_movies, lte_3_movies)):
+                # Randomly assign Movie1 and Movie2 roles
+                if np.random.rand() > 0.5:
+                    movie1, movie2 = gt_movie, lt_movie
+                    label = "Movie1"
+                    movie1_emb = self.config.MOVIE_GT_EMB
+                    movie2_emb = self.config.MOVIE_LTE_EMB
+                else:
+                    movie1, movie2 = lt_movie, gt_movie
+                    label = "Movie2"
+                    movie1_emb = self.config.MOVIE_LTE_EMB
+                    movie2_emb = self.config.MOVIE_GT_EMB
+
                 question = (
-                    f"""Output only "Yes" or "No".
-                    Question: Does user {self.config.USER_EMB} prefer movie {self.config.MOVIE_GT_EMB} 
-                    over movie {self.config.MOVIE_LTE_EMB}?
-                    Answer: """
+                    f"""Output only "Movie1" or "Movie2".
+                        Question: Does user {self.config.USER_EMB} prefer the first movie, "Movie1" ({movie1_emb}), 
+                        over the second movie, "Movie2" ({movie2_emb})?
+                        Answer: """
                 )
 
                 # Store data for this pair
                 qa_dict[len(qa_dict)] = {
                     "question": question,
-                    "answer": "Yes",
-                    "user_id": int(user_id),
-                    "movie_gt_id": int(movie_gt),
-                    "movie_lte_id": int(movie_lte),
+                    "answer": label,  # Either "Movie1" or "Movie2"
+                    "user_id": user_id,
+                    "movie1_id": movie1,
+                    "movie2_id": movie2,
                 }
 
         return qa_dict
