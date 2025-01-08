@@ -123,6 +123,24 @@ def gender_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mappi
     }
 
 
+def preference_accuracy(target_tokens, predicted_tokens):
+    print(f"Target tokens: {target_tokens}")
+    print(f"Predicted tokens: {predicted_tokens}")
+
+    num_correct = 0
+    num_items = 0
+
+    for target, prediction in zip(target_tokens, predicted_tokens):
+        num_items += 1
+        if target.lower() in prediction.lower():
+            num_correct += 1
+
+    return {
+        'num_correct': num_correct,
+        'num_items': num_items,
+    }
+
+
 def get_accuracy_gnnllm(batch_labels, logits, target_mask, tokenizer, task='yes_no'):
     predictions = torch.argmax(logits, dim=-1)
     predictions = predictions[target_mask == 1]
@@ -136,7 +154,7 @@ def get_accuracy_gnnllm(batch_labels, logits, target_mask, tokenizer, task='yes_
     elif task == 'gender':
         return gender_accuracy(target_tokens, predicted_tokens)
     elif task == 'preference':
-        return yes_no_accuracy(target_tokens, predicted_tokens)
+        return preference_accuracy(target_tokens, predicted_tokens)
     else:
         raise ValueError(f"Task {task} not supported")
 

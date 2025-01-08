@@ -357,13 +357,11 @@ def evaluate_preference(config: Any):
     gnn_llm = GraphTokenLLM(config, movielens.test)
 
     if config.use_pt:
+        print("Loading model from checkpoint")
         gnn_llm = load_model(gnn_llm, config)
     gnn_llm = gnn_llm.to(device)
     gnn_llm.eval()  # Set model to evaluation mode
 
-    total_correct_yes_preds, total_correct_no_preds = 0, 0
-    total_wrong_yes_preds, total_wrong_no_preds = 0, 0
-    total_yes_targets, total_no_targets = 0, 0
     total_correct, total_items = 0, 0
 
     with torch.no_grad():
@@ -372,29 +370,21 @@ def evaluate_preference(config: Any):
 
             # Process results for preference
             batch_res = get_accuracy_gnnllm(batch_labels, logits, target_masks, gnn_llm.tokenizer, task='preference')
-            total_correct_yes_preds += batch_res['num_correct_yes_preds']
-            total_correct_no_preds += batch_res['num_correct_no_preds']
-            total_wrong_yes_preds += batch_res['num_wrong_yes_preds']
-            total_wrong_no_preds += batch_res['num_wrong_no_preds']
-            total_yes_targets += batch_res['num_yes_targets']
-            total_no_targets += batch_res['num_no_targets']
             total_correct += batch_res['num_correct']
             total_items += batch_res['num_items']
 
-    aggregated_res = {
-        "num_correct": total_correct,
-        "num_correct_yes_preds": total_correct_yes_preds,
-        "num_correct_no_preds": total_correct_no_preds,
-        "num_wrong_yes_preds": total_wrong_yes_preds,
-        "num_wrong_no_preds": total_wrong_no_preds,
-        "num_yes_targets": total_yes_targets,
-        "num_no_targets": total_no_targets,
-        "num_items": total_items,
-    }
 
-    print(aggregated_res)
+    accuracy = total_correct / total_items if total_items > 0 else 0
 
-    log_test_to_wandb(aggregated_res)
+    data = [
+        ["accuracy", accuracy],
+        ["num_items", total_items],
+        ["num_correct", total_correct],
+    ]
+
+    table = wandb.Table(columns=["Metric", "Value"], data=data)
+
+    wandb.log({"evaluation_table": table})
 
     wandb.finish()
 

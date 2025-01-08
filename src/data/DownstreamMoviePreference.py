@@ -38,16 +38,15 @@ class GraphQAPreferenceDataset(Dataset):
                     movie2_emb = self.config.MOVIE_GT_EMB
 
                 question = (
-                    f"""Output only "Movie1" or "Movie2".
-                        Question: Does user {self.config.USER_EMB} prefer the first movie, "Movie1" ({movie1_emb}), 
-                        over the second movie, "Movie2" ({movie2_emb})?
-                        Answer: """
+                    f"""Output only the single word "Movie1" or "Movie2" without additional punctuation.\n
+                        Question: Does user {self.config.USER_EMB} prefer the first movie, "Movie1" (ID: {movie1_emb}) 
+                        or the second movie, "Movie2" (ID: {movie2_emb})?\nAnswer: """
                 )
 
                 # Store data for this pair
                 qa_dict[len(qa_dict)] = {
                     "question": question,
-                    "answer": label,  # Either "Movie1" or "Movie2"
+                    "answer": label,  
                     "user_id": user_id,
                     "movie1_id": movie1,
                     "movie2_id": movie2,
