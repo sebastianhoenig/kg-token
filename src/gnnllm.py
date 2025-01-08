@@ -1,4 +1,7 @@
 from typing import Any
+
+import pandas as pd
+
 import wandb
 from torch.utils.data import DataLoader
 import torch
@@ -337,11 +340,6 @@ def evaluate_age(config: Any):
 
 
 def evaluate_preference(config: Any):
-    import wandb
-    from torch.utils.data import DataLoader
-    from tqdm import tqdm
-    import torch
-
     # Initialize logging
     wandb.init(project=config.project_name, name="PREFERENCE_DS_TASK", config=config)
 
@@ -349,8 +347,9 @@ def evaluate_preference(config: Any):
     movielens = MovieLens(config)
     movielens.create_graph()
 
+    user_movie_data = pd.read_csv("/Users/sebastian/University/Master/third term/sem-proj/kg-token/src/data/users_movies_pref_split.csv")
     # Initialize dataset and dataloader
-    test_dataset = GraphQAPreferenceDataset(graph=movielens.test, config=config, user_movie_data="/Users/sebastian/University/Master/third term/sem-proj/kg-token/src/data/users_movies_pref_split.csv")
+    test_dataset = GraphQAPreferenceDataset(graph=movielens.test, config=config, user_movie_data=user_movie_data)
     test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
     device = config.device
 

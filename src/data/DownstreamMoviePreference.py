@@ -35,9 +35,9 @@ class GraphQAPreferenceDataset(Dataset):
                 qa_dict[len(qa_dict)] = {
                     "question": question,
                     "answer": "Yes",
-                    "user_id": user_id,
-                    "movie_gt_id": movie_gt,
-                    "movie_lte_id": movie_lte,
+                    "user_id": int(user_id),
+                    "movie_gt_id": int(movie_gt),
+                    "movie_lte_id": int(movie_lte),
                 }
 
         return qa_dict
