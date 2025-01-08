@@ -341,11 +341,17 @@ class GraphTokenLLM(nn.Module):
         movie2_ids = []
         movie1_embs = []
         movie2_embs = []
+        os_movie1_ids = []
+        os_movie2_ids = []
+        os_movie1_embs = []
+        os_movie2_embs = []
         target_masks = []
         input_tokens = []
 
-        for question, answer, user_id, movie1_id, movie2_id, movie1_emb, movie2_emb in zip(
-            batch["question"], batch["answer"], batch["user_id"], batch["movie1_id"], batch["movie2_id"], batch["movie1_emb"], batch["movie2_emb"]
+        for question, answer, user_id, movie1_id, movie2_id, movie1_emb, movie2_emb, \
+            os_movie1_id, os_movie2_id, os_movie1_emb, os_movie2_emb in zip(
+            batch["question"], batch["answer"], batch["user_id"], batch["movie1_id"], batch["movie2_id"], batch["movie1_emb"], batch["movie2_emb"],
+            batch["one_shot_movie1_id"], batch["one_shot_movie2_id"], batch["one_shot_movie1_emb"], batch["one_shot_movie2_emb"]
         ):
             query_tokens = self.tokenizer(question, add_special_tokens=False)["input_ids"]
             answer_tokens = self.tokenizer(answer, add_special_tokens=False)["input_ids"]
@@ -368,6 +374,10 @@ class GraphTokenLLM(nn.Module):
             movie2_ids.append(movie2_id)
             movie1_embs.append(movie1_emb)
             movie2_embs.append(movie2_emb)
+            os_movie1_ids.append(os_movie1_id)
+            os_movie2_ids.append(os_movie2_id)
+            os_movie1_embs.append(os_movie1_emb)
+            os_movie2_embs.append(os_movie2_emb)
             target_masks.append(torch.tensor(target_mask))
             input_tokens.append(torch.tensor(input_token))
 
@@ -375,6 +385,8 @@ class GraphTokenLLM(nn.Module):
         user_ids = torch.tensor(user_ids).to(self.device)
         movie1_ids = torch.tensor(movie1_ids).to(self.device)
         movie2_ids = torch.tensor(movie2_ids).to(self.device)
+        os_movie1_ids = torch.tensor(os_movie1_ids).to(self.device)
+        os_movie2_ids = torch.tensor(os_movie2_ids).to(self.device)
         target_masks = torch.stack(target_masks).to(self.device)
         input_tokens = torch.stack(input_tokens).to(self.device)
 
@@ -390,20 +402,28 @@ class GraphTokenLLM(nn.Module):
         user_embeds = self.fc1(graph_embeds['user'])
         movie_embeds = self.fc1(graph_embeds['movie'])
 
-        for i, (user_id, movie1_id, movie2_id, movie1_emb, movie2_emb) in enumerate(zip(user_ids, movie1_ids, movie2_ids, movie1_embs, movie2_embs)):
+        for i, (user_id, movie1_id, movie2_id, movie1_emb, movie2_emb, os_movie1_id, os_movie2_id, os_movie1_emb, os_movie2_emb) in enumerate(zip(user_ids, movie1_ids, movie2_ids, movie1_embs, movie2_embs, os_movie1_ids, os_movie2_ids, os_movie1_embs, os_movie2_embs)):
             movie1_embedding = movie_embeds[movie1_id].to(self.device)
             movie2_embedding = movie_embeds[movie2_id].to(self.device)
             user_embedding = user_embeds[user_id].to(self.device)
 
+            os_movie1_embedding = movie_embeds[os_movie1_id].to(self.device)
+            os_movie2_embedding = movie_embeds[os_movie2_id].to(self.device)
+
             user_token_id = self.tokenizer.convert_tokens_to_ids(self.args.USER_EMB)
             movie1_token_id = self.tokenizer.convert_tokens_to_ids(movie1_emb)
             movie2_token_id = self.tokenizer.convert_tokens_to_ids(movie2_emb)
+
+            os_movie1_token_id = self.tokenizer.convert_tokens_to_ids(os_movie1_emb)
+            os_movie2_token_id = self.tokenizer.convert_tokens_to_ids(os_movie2_emb)
 
             # Create a modified embedding matrix
             modified_embs = self.embedding_layer.weight.clone()
             modified_embs[user_token_id] = user_embedding
             modified_embs[movie1_token_id] = movie1_embedding
             modified_embs[movie2_token_id] = movie2_embedding
+            modified_embs[os_movie1_token_id] = os_movie1_embedding
+            modified_embs[os_movie2_token_id] = os_movie2_embedding
 
             # Embed input tokens using the modified embeddings
             input_embeddings = F.embedding(input_tokens[i], modified_embs)

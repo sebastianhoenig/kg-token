@@ -23,38 +23,67 @@ class GraphQAPreferenceDataset(Dataset):
             gt_3_movies = eval(row['random_movies_gt_3'])
             lte_3_movies = eval(row['random_movies_lte_3'])
 
-            # Generate 5 pairs for each user
-            for i, (gt_movie, lt_movie) in enumerate(zip(gt_3_movies, lte_3_movies)):
+            # Ensure we have at least one pair for one-shot and 4 pairs for evaluation
+            pairs = list(zip(gt_3_movies, lte_3_movies))[:5]
+            if len(pairs) < 5:
+                continue
+
+            # Use the first pair as the one-shot example
+            one_shot_gt_movie, one_shot_lt_movie = pairs[0]
+            if np.random.rand() > 0.5:
+                one_shot_movie1, one_shot_movie2 = one_shot_gt_movie, one_shot_lt_movie
+                one_shot_label = "1"
+                one_shot_movie1_emb = self.config.OS_MOVIE_GT_EMB
+                one_shot_movie2_emb = self.config.OS_MOVIE_LTE_EMB
+            else:
+                one_shot_movie1, one_shot_movie2 = one_shot_lt_movie, one_shot_gt_movie
+                one_shot_label = "2"
+                one_shot_movie1_emb = self.config.OS_MOVIE_LTE_EMB
+                one_shot_movie2_emb = self.config.OS_MOVIE_GT_EMB
+
+            one_shot_example = (
+                f"""Output only the single word "1" or "2" without additional punctuation.\n"
+                Question: Does user {self.config.USER_EMB} prefer the first movie, "1" (ID: {one_shot_movie1_emb})
+                or the second movie, "2" (ID: {one_shot_movie2_emb})?\nAnswer: {one_shot_label}"""
+            )
+
+            # Use the remaining 4 pairs for evaluation
+            for i, (gt_movie, lt_movie) in enumerate(pairs[1:]):
                 # Randomly assign Movie1 and Movie2 roles
                 if np.random.rand() > 0.5:
                     movie1, movie2 = gt_movie, lt_movie
-                    label = "Movie1"
+                    label = "1"
                     movie1_emb = self.config.MOVIE_GT_EMB
                     movie2_emb = self.config.MOVIE_LTE_EMB
                 else:
                     movie1, movie2 = lt_movie, gt_movie
-                    label = "Movie2"
+                    label = "2"
                     movie1_emb = self.config.MOVIE_LTE_EMB
                     movie2_emb = self.config.MOVIE_GT_EMB
 
                 question = (
-                    f"""Output only the single word "Movie1" or "Movie2" without additional punctuation.\n
-                        Question: Does user {self.config.USER_EMB} prefer the first movie, "Movie1" (ID: {movie1_emb}) 
-                        or the second movie, "Movie2" (ID: {movie2_emb})?\nAnswer: """
+                    f"""{one_shot_example}Output only the single word "1" or "2" without additional punctuation.\n"
+                    f"Question: Does user {self.config.USER_EMB} prefer the first movie, "1" (ID: {movie1_emb}) \
+                    or the second movie, "2" (ID: {movie2_emb})?\nAnswer: """
                 )
 
                 # Store data for this pair
                 qa_dict[len(qa_dict)] = {
                     "question": question,
-                    "answer": label,  
+                    "answer": label,
                     "user_id": user_id,
                     "movie1_id": movie1,
                     "movie2_id": movie2,
                     "movie1_emb": movie1_emb,
                     "movie2_emb": movie2_emb,
+                    "one_shot_movie1_id": one_shot_movie1,
+                    "one_shot_movie2_id": one_shot_movie2,
+                    "one_shot_movie1_emb": one_shot_movie1_emb,
+                    "one_shot_movie2_emb": one_shot_movie2_emb,
                 }
 
         return qa_dict
+
 
     def __len__(self):
         return len(self.data)
