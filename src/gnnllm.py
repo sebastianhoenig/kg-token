@@ -355,7 +355,9 @@ def evaluate_preference(config: Any):
 
     # Load and prepare the model
     gnn_llm = GraphTokenLLM(config, movielens.test)
-    gnn_llm = load_model(gnn_llm, config)
+
+    if config.use_pt:
+        gnn_llm = load_model(gnn_llm, config)
     gnn_llm = gnn_llm.to(device)
     gnn_llm.eval()  # Set model to evaluation mode
 
