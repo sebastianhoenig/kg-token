@@ -51,6 +51,8 @@ class GraphQAPreferenceDataset(Dataset):
                     "user_id": user_id,
                     "movie1_id": movie1,
                     "movie2_id": movie2,
+                    "movie1_emb": movie1_emb,
+                    "movie2_emb": movie2_emb,
                 }
 
         return qa_dict
