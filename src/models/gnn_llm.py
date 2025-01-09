@@ -81,11 +81,11 @@ class GraphTokenLLM(nn.Module):
             BOS_TOKEN = self.tokenizer.bos_token_id
             EOS_TOKEN = self.tokenizer.eos_token_id
             PAD_TOKEN = self.tokenizer.pad_token_id
-            max_tokens = 70
             input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             target_mask = np.zeros_like(input_token)
             target_mask[len(query_tokens) + 1] = 1  # TRYING THIS OUT - REMOVING EOS TOKEN FROM TARGET MASK
             orig_len = len(query_tokens) + len(answer_tokens) + 1
+            max_tokens = orig_len + 5
             input_token = np.pad(input_token, [[0, max_tokens - orig_len-1]], constant_values=PAD_TOKEN)
             target_mask = np.pad(target_mask, [[0, max_tokens - orig_len-1]], constant_values=0)
             attention_mask = np.ones_like(input_token)

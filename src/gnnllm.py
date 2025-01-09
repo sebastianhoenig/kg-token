@@ -13,7 +13,7 @@ from src.models.gnn_llm import GraphTokenLLM
 from src.utils.metrics import get_accuracy_gnnllm
 from src.graph.Movielens100k import MovieLens
 from src.data.LinkPredictionDataset import GraphQADataset
-from src.data.LinkRegressionDataset import GraphRatingDataset
+from src.data.LinkRatingDataset import GraphRatingDataset
 from src.data.NodeClassificationDataset import NodeClassificationDataset
 from src.data.DownstreamMoviePreference import GraphQAPreferenceDataset
 from src.utils.logging import log_test_to_wandb, log_age_downstream_task_to_wandb, log_gender_downstream_task_to_wandb, log_age_train_task_to_wandb
