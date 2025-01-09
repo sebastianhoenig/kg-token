@@ -258,6 +258,9 @@ class GraphTokenLLM(nn.Module):
         # only transform to float if it is a number
         relevant_logits = [float(token) if token.isnumeric() else 0.0 for token in relevant_logits]
 
+        relevant_labels = torch.tensor(relevant_labels).to(self.device)
+        relevant_logits = torch.tensor(relevant_logits).to(self.device)
+
         print(f"Preds: {relevant_logits}")
         print(f"Targets: {relevant_labels}")
 
