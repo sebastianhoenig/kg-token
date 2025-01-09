@@ -200,7 +200,7 @@ def train_gnnllm_rating(config: Any):
     print("Evaluating on Test set")
     save_model(gnn_llm, config)
 
-    test_dataset = GraphQADataset(graph=movielens.test, config=config)
+    test_dataset = GraphRatingDataset(graph=movielens.test, config=config)
     test_loader = DataLoader(test_dataset, batch_size=config.batch_size)
 
     gnn_llm.eval()
