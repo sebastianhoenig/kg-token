@@ -13,7 +13,7 @@ from src.models.gnn_llm import GraphTokenLLM
 from src.utils.metrics import get_accuracy_gnnllm
 from src.graph.Movielens100k import MovieLens
 from src.data.LinkPredictionDataset import GraphQADataset
-from src.data.LinkRegressionDataset import GraphRegressionDataset
+from src.data.LinkRegressionDataset import GraphRatingDataset
 from src.data.NodeClassificationDataset import NodeClassificationDataset
 from src.data.DownstreamMoviePreference import GraphQAPreferenceDataset
 from src.utils.logging import log_test_to_wandb, log_age_downstream_task_to_wandb, log_gender_downstream_task_to_wandb, log_age_train_task_to_wandb
@@ -118,7 +118,7 @@ def train_gnnllm(config: Any):
     wandb.finish()
 
 
-def train_gnnllm_regression(config: Any):
+def train_gnnllm_rating(config: Any):
     apply_seed(0)
 
     wandb.init(project=config.project_name, name=config.name, config=config)
@@ -132,7 +132,7 @@ def train_gnnllm_regression(config: Any):
     graph = movielens.train
     graph = graph.to(device)
 
-    train_dataset = GraphRegressionDataset(graph=movielens.train, config=config)
+    train_dataset = GraphRatingDataset(graph=movielens.train, config=config)
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
 
     example_ct = 0  # number of examples seen
@@ -151,24 +151,48 @@ def train_gnnllm_regression(config: Any):
 
         for batch in tqdm(train_loader, desc="Batch Progress", leave=False):
 
+            batch_correct = 0
+            batch_items = 0
+            batch_correct_1 = 0
+            batch_correct_2 = 0
+            batch_correct_3 = 0
+            batch_correct_4 = 0
+            batch_correct_5 = 0
+
             batch_size = len(batch['question'])
 
-            loss, logits, labels = gnn_llm.forward_regression(batch, graph)
+            logits, loss, batch_labels, target_mask = gnn_llm.forward(batch, graph)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            mse = torch.nn.functional.mse_loss(logits, labels)
-            rmse = torch.sqrt(mse)
+            batch_res = get_accuracy_gnnllm(batch_labels, logits, target_mask, gnn_llm.tokenizer, task='rating')
+
+            batch_correct += batch_res['num_correct']
+            batch_items += batch_res['num_items']
+            accuracy = batch_correct / batch_items if batch_items > 0 else 0
+
+
+            for key, value in batch_res['correct_prediction_counts'].items():
+                if key == "1":
+                    batch_correct_1 += value
+                elif key == "2":
+                    batch_correct_2 += value
+                elif key == "3":
+                    batch_correct_3 += value
+                elif key == "4":
+                    batch_correct_4 += value
+                elif key == "5":
+                    batch_correct_5 += value
+
 
             total_loss += loss.detach().item()
             #scheduler.step(loss.item())
 
             example_ct += batch_size
 
-            wandb.log({"loss": loss.item()}, step=example_ct)
-            wandb.log({"rmse": rmse.item()}, step=example_ct)
+            wandb.log({"epoch": epoch, "loss": loss, "accuracy": accuracy, "correct_1": batch_correct_1, "correct_2": batch_correct_2, "correct_3": batch_correct_3, "correct_4": batch_correct_4, "correct_5": batch_correct_5}, step=example_ct)
 
         avg_loss = total_loss / len(train_loader)
         print(f"Epoch {epoch + 1}/{config.num_epochs}, Loss: {avg_loss}")
@@ -181,21 +205,42 @@ def train_gnnllm_regression(config: Any):
 
     gnn_llm.eval()
 
-    total_items, total_mse = 0, 0
+    total_correct = 0
+    total_items = 0
+    rating_category_counts = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
+    correct_prediction_counts = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
 
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Evaluating"):
-            _, logits, labels = gnn_llm.forward_regression(batch, graph)
-            mse = torch.nn.functional.mse_loss(logits, labels, reduction='sum')  # Sum over batch
-            total_mse += mse.item()
-            total_items += len(labels)
+            logits, _, batch_labels, target_mask = gnn_llm.forward(batch, graph)
 
+            batch_res = get_accuracy_gnnllm(batch_labels, logits, target_mask, gnn_llm.tokenizer, task='rating')
 
-    avg_rmse = (total_mse / total_items) ** 0.5
+            total_correct += batch_res['num_correct']
+            total_items += batch_res['num_items']
+
+            for key, value in batch_res['correct_prediction_counts'].items():
+                correct_prediction_counts[key] += value
+            for key,value in batch_res['rating_category_counts'].items():
+                rating_category_counts[key] += value
+
+    accuracy_1 = correct_prediction_counts['1'] / rating_category_counts['1'] if rating_category_counts['1'] > 0 else 0
+    accuracy_2 = correct_prediction_counts['2'] / rating_category_counts['2'] if rating_category_counts['2'] > 0 else 0
+    accuracy_3 = correct_prediction_counts['3'] / rating_category_counts['3'] if rating_category_counts['3'] > 0 else 0
+    accuracy_4 = correct_prediction_counts['4'] / rating_category_counts['4'] if rating_category_counts['4'] > 0 else 0
+    accuracy_5 = correct_prediction_counts['5'] / rating_category_counts['5'] if rating_category_counts['5'] > 0 else 0
+
+    accuracy = total_correct / total_items if total_items > 0 else 0
 
     data = [
-        ["RMSE", avg_rmse],
+        ["accuracy", accuracy],
         ["num_items", total_items],
+        ["num_correct", total_correct],
+        ["accuracy_1", accuracy_1],
+        ["accuracy_2", accuracy_2],
+        ["accuracy_3", accuracy_3],
+        ["accuracy_4", accuracy_4],
+        ["accuracy_5", accuracy_5]
     ]
 
     table = wandb.Table(columns=["Metric", "Value"], data=data)

@@ -95,6 +95,38 @@ def age_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mapping[
         "correct_predictions": correct_predictions,
     }
 
+def rating_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mapping[str, float]:
+    total_correct = 0
+    total_items = 0
+    rating_category_counts = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
+    correct_prediction_counts = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
+
+    for label, prediction in zip(targets, predictions):
+        total_items += 1
+        rating_category_counts[label] += 1
+        if label == "1" and "1" in prediction:
+            total_correct += 1
+            correct_prediction_counts[label] += 1
+        elif label == "2" and "2" in prediction:
+            total_correct += 1
+            correct_prediction_counts[label] += 1
+        elif label == "3" and "3" in prediction:
+            total_correct += 1
+            correct_prediction_counts[label] += 1
+        elif label == "4" and "4" in prediction:
+            total_correct += 1
+            correct_prediction_counts[label] += 1
+        elif label == "5" and "5" in prediction:
+            total_correct += 1
+            correct_prediction_counts[label] += 1
+
+    return {
+        "total_correct": total_correct,
+        "total_items": total_items,
+        "rating_category_counts": rating_category_counts,
+        "correct_prediction_counts": correct_prediction_counts,
+    }
+
 
 def gender_accuracy(targets: Sequence[str], predictions: Sequence[str]) -> Mapping[str, float]:
     print(targets)
@@ -155,6 +187,8 @@ def get_accuracy_gnnllm(batch_labels, logits, target_mask, tokenizer, task='yes_
         return gender_accuracy(target_tokens, predicted_tokens)
     elif task == 'preference':
         return preference_accuracy(target_tokens, predicted_tokens)
+    elif task == 'rating':
+        return rating_accuracy(target_tokens, predicted_tokens)
     else:
         raise ValueError(f"Task {task} not supported")
 

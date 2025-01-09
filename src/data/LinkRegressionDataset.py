@@ -3,7 +3,7 @@ from typing import Dict, Union
 from torch.utils.data import Dataset
 
 
-class GraphRegressionDataset(Dataset):
+class GraphRatingDataset(Dataset):
 
     def __init__(self, graph: HeteroData, config):
         super().__init__()
