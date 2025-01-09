@@ -23,7 +23,7 @@ class GraphRegressionDataset(Dataset):
                              f"User embedding: {self.config.USER_EMB}\n"
                              f"Movie embedding: {self.config.MOVIE_EMB}\n"
                              f"Rating: ",
-                "rating": ratings[ind].item(),  # Ensure rating is a scalar value
+                "answer": ratings[ind].item(),  # Ensure rating is a scalar value
                 "user_id": user_idx,
                 "movie_id": movie_idx,
             }
