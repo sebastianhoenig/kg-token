@@ -169,8 +169,8 @@ def train_gnnllm_rating(config: Any):
 
             batch_res = get_accuracy_gnnllm(batch_labels, logits, target_mask, gnn_llm.tokenizer, task='rating')
 
-            batch_correct += batch_res['num_correct']
-            batch_items += batch_res['num_items']
+            batch_correct += batch_res['total_correct']
+            batch_items += batch_res['total_items']
             accuracy = batch_correct / batch_items if batch_items > 0 else 0
 
 
@@ -216,8 +216,8 @@ def train_gnnllm_rating(config: Any):
 
             batch_res = get_accuracy_gnnllm(batch_labels, logits, target_mask, gnn_llm.tokenizer, task='rating')
 
-            total_correct += batch_res['num_correct']
-            total_items += batch_res['num_items']
+            total_correct += batch_res['total_correct']
+            total_items += batch_res['total_items']
 
             for key, value in batch_res['correct_prediction_counts'].items():
                 correct_prediction_counts[key] += value
