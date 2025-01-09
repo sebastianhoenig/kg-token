@@ -43,7 +43,7 @@ class GraphQAPreferenceDataset(Dataset):
 
             one_shot_example = (
                 f"""Output only the single word "Yes" or "No" without additional punctuation.\n"
-                Question: Does user {self.config.USER_EMB} prefer the first movie (ID: {one_shot_movie1_emb}) or the second movie (ID: {one_shot_movie2_emb})?\nAnswer: {one_shot_label}"""
+                Question: Does user {self.config.USER_EMB} prefer the first movie (representation: {one_shot_movie1_emb}) over the second movie (representation: {one_shot_movie2_emb})?\nAnswer: {one_shot_label}"""
             )
 
             # Use the remaining 4 pairs for evaluation
@@ -62,7 +62,7 @@ class GraphQAPreferenceDataset(Dataset):
 
                 question = (
                   f"""IMPORTANT: Output must strictly be a single word: either "Yes" or "No". Do not include any additional words, punctuation, or characters.\n
-                  Question: Does user {self.config.USER_EMB} prefer the first movie (ID: {movie1_emb}) or the second movie (ID: {movie2_emb})?\nAnswer: """
+                  Question: Does user {self.config.USER_EMB} prefer the first movie (ID: {movie1_emb}) over the second movie (ID: {movie2_emb})?\nAnswer: """
               )
 
 
