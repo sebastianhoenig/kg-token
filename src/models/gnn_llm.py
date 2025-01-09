@@ -249,17 +249,12 @@ class GraphTokenLLM(nn.Module):
         # Mask out irrelevant positions
         relevant_logits = logits[target_masks == 1]  # Only take logits corresponding to valid targets
         relevant_labels = batch_labels[target_masks == 1]
-        relevant_labels_list = relevant_labels.tolist()
-        relevant_labels = [float(self.tokenizer.decode([token])) for token in relevant_labels_list]
+        relevant_labels = [float(self.tokenizer.decode([token])) for token in relevant_labels]
 
         relevant_logits = torch.argmax(relevant_logits, dim=1)
-        relevant_logits = relevant_logits.tolist()
         relevant_logits = [self.tokenizer.decode([token]) for token in relevant_logits]
         # only transform to float if it is a number
         relevant_logits = [float(token) if token.isnumeric() else 0.0 for token in relevant_logits]
-
-        relevant_labels = torch.tensor(relevant_labels).to(self.device)
-        relevant_logits = torch.tensor(relevant_logits).to(self.device)
 
         print(f"Preds: {relevant_logits}")
         print(f"Targets: {relevant_labels}")
