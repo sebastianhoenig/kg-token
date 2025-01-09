@@ -139,6 +139,10 @@ def train_gnnllm_rating(config: Any):
 
     gnn_llm = GraphTokenLLM(config, movielens.train)
 
+    if config.use_pt:
+        print("Loading model from checkpoint")
+        gnn_llm = load_model(gnn_llm, config)
+
     params = [p for _, p in gnn_llm.named_parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(
         [{'params': params, 'lr': config.lr}, ],
