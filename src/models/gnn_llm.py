@@ -172,7 +172,7 @@ class GraphTokenLLM(nn.Module):
             answer_tokens = self.tokenizer(answer, add_special_tokens=False)["input_ids"]
             BOS_TOKEN = self.tokenizer.bos_token_id
             EOS_TOKEN = self.tokenizer.eos_token_id
-            PAD_TOKEN = self.tokenizer.pad_token_id
+            PAD_TOKEN = self.tokenizer.eos_token_id
             input_token = np.array([BOS_TOKEN] + query_tokens + answer_tokens + [EOS_TOKEN])
             target_mask = np.zeros_like(input_token)
             target_mask[len(query_tokens) + 1] = 1  # TRYING THIS OUT - REMOVING EOS TOKEN FROM TARGET MASK
@@ -248,10 +248,15 @@ class GraphTokenLLM(nn.Module):
 
         # Mask out irrelevant positions
         relevant_logits = logits[target_masks == 1]  # Only take logits corresponding to valid targets
-        relevant_labels = batch_labels[target_masks == 1]  # Only take actual labels corresponding to the mask
+        relevant_labels = batch_labels[target_masks == 1]
+        relevant_labels_list = relevant_labels.tolist()
+        relevant_labels = [float(self.tokenizer.decode([token])) for token in relevant_labels_list]
 
-        relevant_logits = relevant_logits.squeeze().float()
-        relevant_labels = relevant_labels.squeeze().float()
+        relevant_logits = torch.argmax(relevant_logits, dim=1)
+        relevant_logits = relevant_logits.tolist()
+        relevant_logits = [self.tokenizer.decode([token]) for token in relevant_logits]
+        # only transform to float if it is a number
+        relevant_logits = [float(token) if token.isnumeric() else 0.0 for token in relevant_logits]
 
         print(f"Preds: {relevant_logits}")
         print(f"Targets: {relevant_labels}")
