@@ -20,8 +20,8 @@ class GraphQAPreferenceDataset(Dataset):
         # Iterate through each user and construct movie pairs
         for user_idx, row in self.user_movie_data.iterrows():
             user_id = int(row['user_id'])
-            gt_3_movies = eval(row['random_movies_gt_3'])
-            lte_3_movies = eval(row['random_movies_lte_3'])
+            gt_3_movies = eval(row['movies_gt_3'])
+            lte_3_movies = eval(row['movies_lte_3'])
 
             pairs = list(zip(gt_3_movies, lte_3_movies))
             if len(pairs) < 3:
