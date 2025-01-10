@@ -32,12 +32,12 @@ class GraphQAPreferenceDataset(Dataset):
                 # Randomly assign Movie1 and Movie2 roles
                 if np.random.rand() > 0.5:
                     movie1, movie2 = gt_movie, lt_movie
-                    label = "Yes"
+                    label = "1"
                     movie1_emb = self.config.MOVIE_GT_EMB
                     movie2_emb = self.config.MOVIE_LTE_EMB
                 else:
                     movie1, movie2 = lt_movie, gt_movie
-                    label = "No"
+                    label = "2"
                     movie1_emb = self.config.MOVIE_LTE_EMB
                     movie2_emb = self.config.MOVIE_GT_EMB
 
