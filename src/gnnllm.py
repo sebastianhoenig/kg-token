@@ -502,22 +502,24 @@ def pretrain_preference(config: Any):
     )
     gnn_llm.train()
 
+    example_ct = 0
     for epoch in tqdm(range(config.num_epochs), desc="Epoch Progress"):
-        total_correct, total_items = 0, 0
         for batch in tqdm(train_loader, desc="Evaluating"):
             logits, loss, batch_labels, target_masks = gnn_llm.forward_two_preference(batch, graph=movielens.test)
 
+            length = len(batch_labels)
+            example_ct += length
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
             # Process results for preference
             batch_res = get_accuracy_gnnllm(batch_labels, logits, target_masks, gnn_llm.tokenizer, task='preference')
-            total_correct += batch_res['num_correct']
-            total_items += batch_res['num_items']
+            total_correct = batch_res['num_correct']
+            total_items = batch_res['num_items']
 
-        accuracy = total_correct / total_items if total_items > 0 else 0
-        wandb.log({"epoch": epoch, "accuracy": accuracy})
+            accuracy = total_correct / total_items if total_items > 0 else 0
+            wandb.log({"accuracy": accuracy, "loss": loss}, step=example_ct)
 
     save_model(gnn_llm, config)
 

@@ -27,7 +27,6 @@ class GraphQAPreferenceDataset(Dataset):
             if len(pairs) < 3:
                 continue
 
-            # Use the remaining 4 pairs for evaluation
             for i, (gt_movie, lt_movie) in enumerate(pairs):
                 # Randomly assign Movie1 and Movie2 roles
                 if np.random.rand() > 0.5:
