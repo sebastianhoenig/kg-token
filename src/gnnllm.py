@@ -560,7 +560,7 @@ def ds_preference(config: Any):
     total_correct, total_items = 0, 0
     with torch.no_grad():
         for batch in tqdm(loader, desc="Evaluating"):
-            logits, loss, batch_labels, target_masks = gnn_llm.inference_three_preference(batch, graph=movielens.test)
+            logits, batch_labels, target_masks = gnn_llm.inference_three_preference(batch, graph=movielens.test)
 
             length = len(batch_labels)
             example_ct += length
