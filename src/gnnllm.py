@@ -519,6 +519,8 @@ def pretrain_preference(config: Any):
         accuracy = total_correct / total_items if total_items > 0 else 0
         wandb.log({"epoch": epoch, "accuracy": accuracy})
 
+    save_model(gnn_llm, config)
+
     wandb.finish()
 
 
