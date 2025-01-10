@@ -548,34 +548,20 @@ def ds_preference(config: Any):
         print("Loading model from checkpoint")
         gnn_llm = load_model(gnn_llm, config)
     gnn_llm = gnn_llm.to(device)
-
-    params = [p for _, p in gnn_llm.named_parameters() if p.requires_grad]
-    optimizer = torch.optim.AdamW(
-        [{'params': params, 'lr': config.lr}, ],
-        betas=(0.9, 0.95)
-    )
     gnn_llm.eval()
 
-    example_ct = 0
     total_correct, total_items = 0, 0
     with torch.no_grad():
         for batch in tqdm(loader, desc="Evaluating"):
             logits, batch_labels, target_masks = gnn_llm.inference_three_preference(batch, graph=movielens.test)
 
-            length = len(batch_labels)
-            example_ct += length
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            # Process results for preference
             batch_res = get_accuracy_gnnllm(batch_labels, logits, target_masks, gnn_llm.tokenizer, task='preference')
             total_correct += batch_res['num_correct']
             total_items += batch_res['num_items']
 
 
     accuracy = total_correct / total_items if total_items > 0 else 0
-    wandb.log({"accuracy": accuracy, "loss": loss}, step=example_ct)
+    wandb.log({"accuracy": accuracy})
 
     wandb.finish()
 
