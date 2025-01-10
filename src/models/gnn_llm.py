@@ -587,8 +587,10 @@ class GraphTokenLLM(nn.Module):
             user_ids.append(user_id)
             movie1_ids.append(movie1_id)
             movie2_ids.append(movie2_id)
+            movie3_ids.append(movie3_id)
             movie1_embs.append(movie1_emb)
             movie2_embs.append(movie2_emb)
+            movie3_embs.append(movie3_emb)
             target_masks.append(torch.tensor(target_mask))
             input_tokens.append(torch.tensor(input_token))
 

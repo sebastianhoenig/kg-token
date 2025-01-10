@@ -21,7 +21,7 @@ class ThreeMoviePreferenceDataset(Dataset):
             lte_3_movies = eval(row['movies_rated_lte_3'])  # Movies rated less than or equal to 3
 
             # Ensure there are enough movies to form triplets
-            if len(gt_3_movies) < 1 or len(lte_3_movies) < 2:
+            if len(gt_3_movies) < 5 or len(lte_3_movies) < 10:
                 continue
 
             for gt_movie in gt_3_movies:
