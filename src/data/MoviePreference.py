@@ -23,31 +23,12 @@ class GraphQAPreferenceDataset(Dataset):
             gt_3_movies = eval(row['random_movies_gt_3'])
             lte_3_movies = eval(row['random_movies_lte_3'])
 
-            # Ensure we have at least one pair for one-shot and 4 pairs for evaluation
-            pairs = list(zip(gt_3_movies, lte_3_movies))[:5]
-            if len(pairs) < 5:
+            pairs = list(zip(gt_3_movies, lte_3_movies))
+            if len(pairs) < 3:
                 continue
 
-            # Use the first pair as the one-shot example
-            one_shot_gt_movie, one_shot_lt_movie = pairs[0]
-            if np.random.rand() > 0.5:
-                one_shot_movie1, one_shot_movie2 = one_shot_gt_movie, one_shot_lt_movie
-                one_shot_label = "Yes"
-                one_shot_movie1_emb = self.config.OS_MOVIE_GT_EMB
-                one_shot_movie2_emb = self.config.OS_MOVIE_LTE_EMB
-            else:
-                one_shot_movie1, one_shot_movie2 = one_shot_lt_movie, one_shot_gt_movie
-                one_shot_label = "No"
-                one_shot_movie1_emb = self.config.OS_MOVIE_LTE_EMB
-                one_shot_movie2_emb = self.config.OS_MOVIE_GT_EMB
-
-            one_shot_example = (
-                f"""Output only the single word "Yes" or "No" without additional punctuation.\n"
-                Question: Does user {self.config.USER_EMB} prefer the first movie (representation: {one_shot_movie1_emb}) over the second movie (representation: {one_shot_movie2_emb})?\nAnswer: {one_shot_label}"""
-            )
-
             # Use the remaining 4 pairs for evaluation
-            for i, (gt_movie, lt_movie) in enumerate(pairs[1:]):
+            for i, (gt_movie, lt_movie) in enumerate(pairs):
                 # Randomly assign Movie1 and Movie2 roles
                 if np.random.rand() > 0.5:
                     movie1, movie2 = gt_movie, lt_movie
@@ -61,12 +42,10 @@ class GraphQAPreferenceDataset(Dataset):
                     movie2_emb = self.config.MOVIE_GT_EMB
 
                 question = (
-                  f"""IMPORTANT: Output must strictly be a single word: either "Yes" or "No". Do not include any additional words, punctuation, or characters.\n
-                  Question: Does user {self.config.USER_EMB} prefer the first movie (ID: {movie1_emb}) over the second movie (ID: {movie2_emb})?\nAnswer: """
-              )
+                  f"""IMPORTANT: Output must strictly be a single word: either "1" or "2". Do not include any additional words, punctuation, or characters.\n
+                  Question: Does user {self.config.USER_EMB} prefer the first movie (1: {movie1_emb}) or the second movie (2: {movie2_emb})?\nAnswer: """
+                 )
 
-
-                # Store data for this pair
                 qa_dict[len(qa_dict)] = {
                     "question": question,
                     "answer": label,
@@ -75,10 +54,6 @@ class GraphQAPreferenceDataset(Dataset):
                     "movie2_id": movie2,
                     "movie1_emb": movie1_emb,
                     "movie2_emb": movie2_emb,
-                    "one_shot_movie1_id": one_shot_movie1,
-                    "one_shot_movie2_id": one_shot_movie2,
-                    "one_shot_movie1_emb": one_shot_movie1_emb,
-                    "one_shot_movie2_emb": one_shot_movie2_emb,
                 }
 
         return qa_dict

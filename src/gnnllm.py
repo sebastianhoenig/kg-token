@@ -15,7 +15,7 @@ from src.graph.Movielens100k import MovieLens
 from src.data.LinkPredictionDataset import GraphQADataset
 from src.data.LinkRatingDataset import GraphRatingDataset
 from src.data.NodeClassificationDataset import NodeClassificationDataset
-from src.data.DownstreamMoviePreference import GraphQAPreferenceDataset
+from src.data.MoviePreference import GraphQAPreferenceDataset
 from src.utils.logging import log_test_to_wandb, log_age_downstream_task_to_wandb, log_gender_downstream_task_to_wandb, log_age_train_task_to_wandb
 from src.utils.checkpoints import save_model, load_model
 from src.data.DownstreamAgeDataset import AgeDataset
@@ -374,10 +374,7 @@ def train_gnnllm_node_classification(config: Any):
     wandb.finish()
 
 
-
-
 def evaluate(config: Any):
-
     movielens = MovieLens(config)
     movielens.create_graph()
 
@@ -476,7 +473,7 @@ def evaluate_age(config: Any):
     wandb.finish()
 
 
-def evaluate_preference(config: Any):
+def pretrain_preference(config: Any):
     # Initialize logging
     wandb.init(project=config.project_name, name="PREFERENCE_DS_TASK", config=config)
 
@@ -486,8 +483,8 @@ def evaluate_preference(config: Any):
 
     user_movie_data = pd.read_csv(config.user_pref_path)
     # Initialize dataset and dataloader
-    test_dataset = GraphQAPreferenceDataset(graph=movielens.test, config=config, user_movie_data=user_movie_data)
-    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
+    train_dataset = GraphQAPreferenceDataset(graph=movielens.train, config=config, user_movie_data=user_movie_data)
+    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False)
     device = config.device
 
     # Load and prepare the model
@@ -497,31 +494,30 @@ def evaluate_preference(config: Any):
         print("Loading model from checkpoint")
         gnn_llm = load_model(gnn_llm, config)
     gnn_llm = gnn_llm.to(device)
-    gnn_llm.eval()  # Set model to evaluation mode
 
-    total_correct, total_items = 0, 0
+    params = [p for _, p in gnn_llm.named_parameters() if p.requires_grad]
+    optimizer = torch.optim.AdamW(
+        [{'params': params, 'lr': config.lr}, ],
+        betas=(0.9, 0.95)
+    )
+    gnn_llm.train()
 
-    with torch.no_grad():
-        for batch in tqdm(test_loader, desc="Evaluating"):
-            logits, batch_labels, target_masks = gnn_llm.inference_preference_downstream(batch, graph=movielens.test)
+    for epoch in tqdm(range(config.num_epochs), desc="Epoch Progress"):
+        total_correct, total_items = 0, 0
+        for batch in tqdm(train_loader, desc="Evaluating"):
+            logits, loss, batch_labels, target_masks = gnn_llm.forward_two_preference(batch, graph=movielens.test)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
             # Process results for preference
             batch_res = get_accuracy_gnnllm(batch_labels, logits, target_masks, gnn_llm.tokenizer, task='preference')
             total_correct += batch_res['num_correct']
             total_items += batch_res['num_items']
 
-
-    accuracy = total_correct / total_items if total_items > 0 else 0
-
-    data = [
-        ["accuracy", accuracy],
-        ["num_items", total_items],
-        ["num_correct", total_correct],
-    ]
-
-    table = wandb.Table(columns=["Metric", "Value"], data=data)
-
-    wandb.log({"evaluation_table": table})
+        accuracy = total_correct / total_items if total_items > 0 else 0
+        wandb.log({"epoch": epoch, "accuracy": accuracy})
 
     wandb.finish()
 
