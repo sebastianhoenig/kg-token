@@ -20,6 +20,7 @@ from src.utils.logging import log_test_to_wandb, log_age_downstream_task_to_wand
 from src.utils.checkpoints import save_model, load_model
 from src.data.DownstreamAgeDataset import AgeDataset
 from src.data.DownstreamGenderDataset import GenderDataset
+from src.data.ThreeMovieDownstream import ThreeMoviePreferenceDataset
 
 
 def train_gnnllm(config: Any):
@@ -505,7 +506,7 @@ def pretrain_preference(config: Any):
     example_ct = 0
     for epoch in tqdm(range(config.num_epochs), desc="Epoch Progress"):
         for batch in tqdm(train_loader, desc="Evaluating"):
-            logits, loss, batch_labels, target_masks = gnn_llm.forward_two_preference(batch, graph=movielens.test)
+            logits, loss, batch_labels, target_masks = gnn_llm.forward_two_preference(batch, graph=movielens.train)
 
             length = len(batch_labels)
             example_ct += length
@@ -525,6 +526,58 @@ def pretrain_preference(config: Any):
 
     wandb.finish()
 
+
+def ds_preference(config: Any):
+    # Initialize logging
+    wandb.init(project=config.project_name, name="PREFERENCE-THREE_DS_TASK", config=config)
+
+    # Load graph data
+    movielens = MovieLens(config)
+    movielens.create_graph()
+
+    user_movie_data = pd.read_csv(config.user_pref_path)
+    # Initialize dataset and dataloader
+    dataset = ThreeMoviePreferenceDataset(graph=movielens.train, config=config, user_movie_data=user_movie_data)
+    loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=False)
+    device = config.device
+
+    # Load and prepare the model
+    gnn_llm = GraphTokenLLM(config, movielens.train)
+
+    if config.use_pt:
+        print("Loading model from checkpoint")
+        gnn_llm = load_model(gnn_llm, config)
+    gnn_llm = gnn_llm.to(device)
+
+    params = [p for _, p in gnn_llm.named_parameters() if p.requires_grad]
+    optimizer = torch.optim.AdamW(
+        [{'params': params, 'lr': config.lr}, ],
+        betas=(0.9, 0.95)
+    )
+    gnn_llm.eval()
+
+    example_ct = 0
+    total_correct, total_items = 0, 0
+    with torch.no_grad():
+        for batch in tqdm(loader, desc="Evaluating"):
+            logits, loss, batch_labels, target_masks = gnn_llm.inference_three_preference(batch, graph=movielens.test)
+
+            length = len(batch_labels)
+            example_ct += length
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            # Process results for preference
+            batch_res = get_accuracy_gnnllm(batch_labels, logits, target_masks, gnn_llm.tokenizer, task='preference')
+            total_correct += batch_res['num_correct']
+            total_items += batch_res['num_items']
+
+
+    accuracy = total_correct / total_items if total_items > 0 else 0
+    wandb.log({"accuracy": accuracy, "loss": loss}, step=example_ct)
+
+    wandb.finish()
 
 
 def evaluate_gender(config: Any):

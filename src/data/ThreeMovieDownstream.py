@@ -38,7 +38,11 @@ class ThreeMoviePreferenceDataset(Dataset):
 
                 movie1, movie2, movie3 = shuffled_movies
                 movie1_emb, movie2_emb, movie3_emb = (
-                    (self.config.MOVIE_GT_EMB if movie == gt_movie else self.config.MOVIE_LTE_EMB) for movie in shuffled_movies
+                    (
+                        self.config.MOVIE_GT_EMB if movie == gt_movie else (
+                            self.config.MOVIE_LTE_EMB1 if movie == lt_movies[0] else self.config.MOVIE_LTE_EMB2
+                        )
+                    ) for movie in shuffled_movies
                 )
 
                 correct_label = shuffled_labels[movies.index(gt_movie)]
