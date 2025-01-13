@@ -36,7 +36,9 @@ The pipeline can be easily executed on **Google Colab** for experimentation and 
 [Run on Google Colab](https://colab.research.google.com/drive/1YjbvyzLUD4R28PrMsPe0AIl2_9omuxHT?usp=sharing)
 
 ### Requirements:
-- The pipeline requires an A100 GPU for efficient execution due to the computational demands of Llama3.1-8b. To select the A100 GPU in the Colab runtime settings:
+- Data [Movielens100k](https://files.grouplens.org/datasets/movielens/) and model [Llama3.1](https://huggingface.co/meta-llama/Llama-3.1-8B) need to be downloaded and stored in drive.
+  
+- The pipeline requires an A100 GPU for efficient execution due to the computational demands of the Llama model. To select the A100 GPU in the Colab runtime settings:
   1. Go to `Runtime` > `Change runtime type`.
   2. Under `Hardware accelerator`, select **GPU**.
   3. Ensure the GPU type is set to **A100**.
