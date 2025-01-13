@@ -6,7 +6,12 @@ This repository contains the implementation and evaluation of a pipeline combini
 ---
 
 ## Repository Structure
-
+- **`src/gnn`**  
+  Training and evaluation script for baseline GNN models.
+  
+- **`src/gnnllm`**  
+  Training and evaluation script for full GraphToken pipeline.
+  
 - **`src/data/`**  
   Contains dataset loaders and utilities for creating input data for the pipeline.  
 
