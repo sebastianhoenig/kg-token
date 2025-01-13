@@ -31,7 +31,7 @@ This repository contains the implementation and evaluation of a pipeline combini
 
 ## Run on Google Colab
 
-The pipeline can be easily executed on **Google Colab** for experimentation and evaluation. Follow the provided link below to access a pre-configured Colab notebook:
+The pipeline can be executed on **Google Colab** for experimentation and evaluation. Follow the provided link below to access a pre-configured Colab notebook:
 
 [Run on Google Colab](https://colab.research.google.com/drive/1YjbvyzLUD4R28PrMsPe0AIl2_9omuxHT?usp=sharing)
 
