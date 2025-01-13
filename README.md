@@ -1,4 +1,4 @@
-# Semester Project: GraphToken Framework: Investigating GNN and LLM Integration for Complex Graphs
+# Semester Project: Exploring GraphToken's Ability to Model Complex Relationships for LLM-powered Recommendation Systems
 
 ## Overview
 This repository contains the implementation and evaluation of a pipeline combining **Graph Neural Networks (GNNs)** and **Large Language Models (LLMs)** for complex graph tasks, specifically leveraging the **Movielens100k** dataset. Inspired by the GraphToken framework, this project extends the scope of evaluation from simple graphs to more complex, heterogeneous graphs with diverse node attributes, as often found in recommendation systems.
