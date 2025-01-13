@@ -33,7 +33,7 @@ This repository contains the implementation and evaluation of a pipeline combini
 
 The pipeline can be easily executed on **Google Colab** for experimentation and evaluation. Follow the provided link below to access a pre-configured Colab notebook:
 
-[Run on Google Colab]([https://colab.research.google.com/drive/1YjbvyzLUD4R28PrMsPe0AIl2_9omuxHT?usp=sharing])
+[Run on Google Colab](https://colab.research.google.com/drive/1YjbvyzLUD4R28PrMsPe0AIl2_9omuxHT?usp=sharing)
 
 ### Requirements:
 - The pipeline requires an A100 GPU for efficient execution due to the computational demands of Llama3.1-8b. To select the A100 GPU in the Colab runtime settings:
