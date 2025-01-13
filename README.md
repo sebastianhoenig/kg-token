@@ -5,6 +5,13 @@ This repository contains the implementation and evaluation of a pipeline combini
 
 ---
 
+## Illustration
+
+![Screenshot 2025-01-12 at 14 40 17](https://github.com/user-attachments/assets/d9100cb4-6790-47c6-b676-4e3febfd558c)
+
+
+---
+
 ## Repository Structure
 - **`src/gnn`**  
   Training and evaluation script for baseline GNN models.
