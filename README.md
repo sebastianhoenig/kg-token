@@ -13,10 +13,10 @@ This repository contains the implementation and evaluation of a pipeline combini
 ---
 
 ## Repository Structure
-- **`src/gnn`**  
+- **`src/gnn.py`**  
   Training and evaluation script for baseline GNN models.
   
-- **`src/gnnllm`**  
+- **`src/gnnllm.py`**  
   Training and evaluation script for full GraphToken pipeline.
   
 - **`src/data/`**  
