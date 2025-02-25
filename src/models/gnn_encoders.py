@@ -1,3 +1,9 @@
+"""
+This module contains the various types of GNN encoders used in this project. They are customizable by setting
+their hyper parameters in the config file.
+"""
+
+
 import torch.nn as nn
 from torch_geometric.nn import SAGEConv, GATConv, GATv2Conv, TransformerConv, GINConv
 import torch.nn.functional as F

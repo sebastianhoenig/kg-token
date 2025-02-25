@@ -1,3 +1,7 @@
+"""
+Dataset for downstream task of predicting user preferences for movies. (Not mentioned in report) - (only used for evaluation)
+"""
+
 from torch_geometric.data import HeteroData
 from typing import Dict, Union
 from torch.utils.data import Dataset

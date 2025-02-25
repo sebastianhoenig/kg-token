@@ -1,3 +1,7 @@
+"""
+Dataset for Task of predicting user gender.(only used for evaluation)
+"""
+
 from torch_geometric.data import HeteroData
 from typing import List, Dict, Union
 from torch.utils.data import Dataset

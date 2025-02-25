@@ -1,3 +1,8 @@
+"""
+A different approach to the GNN architecture where an embedding layer is used to learn the representation of the user.
+This was ultimately not used in the project, but may serve as another direction for embeddings.
+"""
+
 import torch
 import torch.nn as nn
 from src.models.gnn_encoders import load_gnn_model

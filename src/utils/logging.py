@@ -1,3 +1,7 @@
+"""
+Logging to Weights and Biases
+"""
+
 import wandb
 
 

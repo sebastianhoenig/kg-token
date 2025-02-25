@@ -1,3 +1,7 @@
+"""
+Seed setting utility.
+"""
+
 import random
 import numpy as np
 import torch

@@ -1,3 +1,8 @@
+"""
+Binary classification dataset (likes, doesn't like) between users and movies. The cutoff
+for liking is a rating greater than 3 while ratings equal to or less than 3 are considered as not liked.
+"""
+
 from torch_geometric.data import HeteroData
 from typing import List, Dict, Union
 from torch.utils.data import Dataset

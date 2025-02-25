@@ -1,3 +1,7 @@
+"""
+Rating prediction (Multi Classification Task) Dataset.
+"""
+
 from torch_geometric.data import HeteroData
 from typing import Dict, Union
 from torch.utils.data import Dataset

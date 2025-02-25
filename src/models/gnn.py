@@ -1,3 +1,8 @@
+"""
+GNN baseline model. The encoder gnn type can be changed by changing the gnn_model parameter in the args, but the decoder
+part is always a simple feedforward neural network.
+"""
+
 import torch
 import torch.nn as nn
 from src.models.gnn_encoders import load_gnn_model

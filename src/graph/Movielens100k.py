@@ -1,3 +1,8 @@
+"""
+Encoding of the MovieLens 100k dataset. Depending on the methods, different user and movie features
+can be encoded and used in the resulting graph.
+"""
+
 import pandas as pd
 import torch
 from sentence_transformers import SentenceTransformer

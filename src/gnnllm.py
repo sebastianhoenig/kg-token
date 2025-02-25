@@ -23,7 +23,8 @@ from src.data.DownstreamGenderDataset import GenderDataset
 from src.data.ThreeMovieDownstream import ThreeMoviePreferenceDataset
 
 
-def train_gnnllm(config: Any):
+def train_and_evaluate_binary_classification(config: Any):
+    # Function for training the model on the task of predicting user preference for a movie (and evaluating performance on test set)
     apply_seed(0)
 
     wandb.init(project=config.project_name, name=config.name, config=config)
@@ -67,8 +68,6 @@ def train_gnnllm(config: Any):
             res = get_accuracy_gnnllm(batch_labels, logits, target_mask, gnn_llm.tokenizer)
 
             total_loss += loss.detach().item()
-            #scheduler.step(loss.item())
-
             example_ct += batch_size
             log_train_to_wandb(res, epoch, loss, optimizer, example_ct)
 
@@ -119,7 +118,8 @@ def train_gnnllm(config: Any):
     wandb.finish()
 
 
-def train_gnnllm_rating(config: Any):
+def train_and_evaluate_rating_classification(config: Any):
+    # Function for training the model on the task of predicting rating via multi-class classification (and evaluating performance on test set)
     apply_seed(0)
 
     wandb.init(project=config.project_name, name=config.name, config=config)
@@ -193,8 +193,6 @@ def train_gnnllm_rating(config: Any):
 
 
             total_loss += loss.detach().item()
-            #scheduler.step(loss.item())
-
             example_ct += batch_size
 
             wandb.log({"epoch": epoch, "loss": loss, "accuracy": accuracy, "correct_1": batch_correct_1, "correct_2": batch_correct_2, "correct_3": batch_correct_3, "correct_4": batch_correct_4, "correct_5": batch_correct_5}, step=example_ct)
@@ -255,9 +253,9 @@ def train_gnnllm_rating(config: Any):
     wandb.finish()
 
 
-def train_gnnllm_node_classification(config: Any):
+def train_and_eval_user_age_task(config: Any):
+    # Function for training the model on the task of predicting User Age (and evaluating performance on test set)
     apply_seed(0)
-
     wandb.init(project=config.project_name, name=config.name, config=config)
 
     movielens = MovieLens(config)
@@ -279,10 +277,7 @@ def train_gnnllm_node_classification(config: Any):
     gnn_llm = GraphTokenLLM(config, movielens.train)
 
     params = [p for _, p in gnn_llm.named_parameters() if p.requires_grad]
-    optimizer = torch.optim.AdamW(
-        [{'params': params, 'lr': config.lr}, ],
-        betas=(0.9, 0.95)
-    )
+    optimizer = torch.optim.AdamW([{'params': params, 'lr': config.lr}, ],betas=(0.9, 0.95))
 
     for epoch in tqdm(range(config.num_epochs), desc="Epoch Progress"):
 
@@ -375,9 +370,9 @@ def train_gnnllm_node_classification(config: Any):
     wandb.finish()
 
 
-def evaluate(config: Any):
-    movielens = MovieLens(config)
-    movielens.create_graph()
+def evaluate_binary_classification(config: Any):
+    # Evaluate the model on the binary classification task of the user liking a movie or not.
+    movielens, gnn_llm = setup_graph_and_model(config)
 
     test_dataset = GraphQADataset(graph=movielens.test, config=config)
     test_loader = DataLoader(test_dataset, batch_size=config.batch_size)
@@ -385,11 +380,6 @@ def evaluate(config: Any):
 
     graph = movielens.train
     graph = graph.to(device)
-
-    gnn_llm = GraphTokenLLM(config, movielens.test)
-    gnn_llm = load_model(gnn_llm, config)
-    # Set model to evaluation mode
-    gnn_llm.eval()
 
     total_correct_yes_preds, total_correct_no_preds = 0, 0
     total_wrong_yes_preds, total_wrong_no_preds = 0, 0
@@ -422,30 +412,20 @@ def evaluate(config: Any):
         "num_items": total_items,
     }
 
-    print(aggregated_res)
-
     log_test_to_wandb(aggregated_res)
 
 
-def evaluate_age(config: Any):
-
+def downstream_age_task(config: Any):
+    # Function for downstream task of predicting age
     wandb.init(project=config.project_name, name="AGE_DS_TASK", config=config)
 
-    movielens = MovieLens(config)
-    movielens.create_graph()
+    movielens, gnn_llm = setup_graph_and_model(config)
+    test_dataset = AgeDataset(graph=movielens.test, config=config)
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
 
     total_correct, total_items = 0, 0
     age_category_counts = {"Young": 0, "Adult": 0, "Old": 0}
     correct_predictions = {"Young": 0, "Adult": 0, "Old": 0}
-
-    test_dataset = AgeDataset(graph=movielens.test, config=config)
-    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
-    device = config.device
-
-    gnn_llm = GraphTokenLLM(config, movielens.test)
-    gnn_llm = load_model(gnn_llm, config)
-    gnn_llm = gnn_llm.to(device)
-    gnn_llm.eval()  # Set model to evaluation mode
 
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Evaluating"):
@@ -475,32 +455,18 @@ def evaluate_age(config: Any):
 
 
 def pretrain_preference(config: Any):
-    # Initialize logging
+    # Training the model on the User Preferences (2 Movies) task.
     wandb.init(project=config.project_name, name="PREFERENCE_DS_TASK", config=config)
 
-    # Load graph data
-    movielens = MovieLens(config)
-    movielens.create_graph()
-
     user_movie_data = pd.read_csv(config.user_pref_path)
+
+    movielens, gnn_llm = setup_graph_and_model(config)
     # Initialize dataset and dataloader
     train_dataset = GraphQAPreferenceDataset(graph=movielens.train, config=config, user_movie_data=user_movie_data)
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False)
-    device = config.device
-
-    # Load and prepare the model
-    gnn_llm = GraphTokenLLM(config, movielens.test)
-
-    if config.use_pt:
-        print("Loading model from checkpoint")
-        gnn_llm = load_model(gnn_llm, config)
-    gnn_llm = gnn_llm.to(device)
 
     params = [p for _, p in gnn_llm.named_parameters() if p.requires_grad]
-    optimizer = torch.optim.AdamW(
-        [{'params': params, 'lr': config.lr}, ],
-        betas=(0.9, 0.95)
-    )
+    optimizer = torch.optim.AdamW([{'params': params, 'lr': config.lr}, ], betas=(0.9, 0.95))
     gnn_llm.train()
 
     example_ct = 0
@@ -527,28 +493,16 @@ def pretrain_preference(config: Any):
     wandb.finish()
 
 
-def ds_preference(config: Any):
-    # Initialize logging
+def downstream_three_movie_preference_task(config: Any):
+    # Downstream User Preferences (3 Movies) task.
     wandb.init(project=config.project_name, name="PREFERENCE-THREE_DS_TASK", config=config)
 
-    # Load graph data
-    movielens = MovieLens(config)
-    movielens.create_graph()
-
     user_movie_data = pd.read_csv(config.user_pref_path)
+
+    movielens, gnn_llm = setup_graph_and_model(config)
     # Initialize dataset and dataloader
     dataset = ThreeMoviePreferenceDataset(graph=movielens.train, config=config, user_movie_data=user_movie_data)
     loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=False)
-    device = config.device
-
-    # Load and prepare the model
-    gnn_llm = GraphTokenLLM(config, movielens.train)
-
-    if config.use_pt:
-        print("Loading model from checkpoint")
-        gnn_llm = load_model(gnn_llm, config)
-    gnn_llm = gnn_llm.to(device)
-    gnn_llm.eval()
 
     total_correct, total_items = 0, 0
     with torch.no_grad():
@@ -566,25 +520,18 @@ def ds_preference(config: Any):
     wandb.finish()
 
 
-def evaluate_gender(config: Any):
-
+def downstream_gender_task(config: Any):
+    # Function for downstream task of predicting gender
     wandb.init(project=config.project_name, name="Gender_DS_Task", config=config)
 
-    movielens = MovieLens(config)
-    movielens.create_graph()
+    movielens, gnn_llm = setup_graph_and_model(config)
+
+    test_dataset = GenderDataset(graph=movielens.test, config=config)
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
 
     total_correct, total_items = 0, 0
     gender_category_counts = {"Male": 0, "Female": 0}
     correct_predictions = {"Male": 0, "Female": 0}
-
-    test_dataset = GenderDataset(graph=movielens.test, config=config)
-    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
-    device = config.device
-
-    gnn_llm = GraphTokenLLM(config, movielens.test)
-    gnn_llm = load_model(gnn_llm, config)
-    gnn_llm = gnn_llm.to(device)
-    gnn_llm.eval()  # Set model to evaluation mode
 
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Evaluating"):
@@ -609,4 +556,20 @@ def evaluate_gender(config: Any):
     log_gender_downstream_task_to_wandb(aggregated_res)
 
     wandb.finish()
+
+
+def setup_graph_and_model(config):
+    movielens = MovieLens(config)
+    movielens.create_graph()
+
+    device = config.device
+
+    gnn_llm = GraphTokenLLM(config, movielens.test)
+    if config.use_pt:
+        print("Loading model from checkpoint")
+        gnn_llm = load_model(gnn_llm, config)
+    gnn_llm = gnn_llm.to(device)
+    gnn_llm.eval()
+
+    return movielens, gnn_llm
 

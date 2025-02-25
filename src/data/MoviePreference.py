@@ -1,3 +1,7 @@
+"""
+Dataset for the User Preferences (2 Movies) task.
+"""
+
 from torch_geometric.data import HeteroData
 from typing import List, Dict, Union
 from torch.utils.data import Dataset

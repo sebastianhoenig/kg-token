@@ -1,7 +1,11 @@
+"""
+Training file for the GNN baseline model.
+"""
+
+
 from typing import Any
 import torch
 from src.utils.seed import apply_seed
-from src.models.gnn import GNNPipeline
 from src.models.gnn_w_emb import GNNEmbPipeline
 from src.utils.metrics import get_accuracy_gnn_binary_task, get_rmse_gnn_regression_task
 from src.graph.Movielens100k import MovieLens

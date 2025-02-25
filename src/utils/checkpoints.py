@@ -1,3 +1,7 @@
+"""
+Checkpointing for model parameters.
+"""
+
 import os
 import torch
 
